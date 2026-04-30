@@ -89,14 +89,256 @@ var MD = {
 
 // ===== SYSTEM PROMPT =====
 function makeResumeSys(pages) {
-  var pr = pages === 1
-    ? "CRITICAL ONE-PAGE MODE: Select ONLY 3 bullets per experience role. Select ONLY 3 projects."
-    : "TWO PAGES: Include 4-5 bullets per role, 5-6 projects.";
-  return "You are a resume tailoring engine. Candidate data: " + JSON.stringify(MD) + "\n\n" + pr + "\n\nRULES:\n- Overview: 3 sentences, start with job title + '6+ years of experience'\n- Skills: 4 lines with labels matching the posting\n- include_airtel: true only if telecom/KPI relevant\n- include_writer: true only if writing/content relevant\n- certifications: select relevant cert IDs\n- coursework: select 6-8 relevant courses\n- key_highlights: 3 punchy quantified bullets\n- match_score: 0-100, matched_keywords: array\n\nJSON ONLY:\n{\"overview\":\"str\",\"target_title\":\"str\",\"skills\":[{\"label\":\"str\",\"items\":\"str\"}],\"coursework\":[\"str\"],\"key_highlights\":[\"str\"],\"match_score\":0,\"matched_keywords\":[\"str\"],\"include_airtel\":false,\"include_writer\":false,\"certifications\":[\"str\"],\"freelance_bullets\":[\"str\"],\"jkl_bullets\":[\"str\"],\"huawei_bullets\":[\"str\"],\"airtel_bullets\":[\"str\"],\"writer_bullets\":[\"str\"],\"projects\":[\"str\"],\"filename_suffix\":\"str\"}";
+  const pr = pages === 1
+    ? "CRITICAL ONE-PAGE MODE: Select ONLY 3 bullets per experience role (freelance, jkl, huawei). Select ONLY 3 projects. Keep overview to exactly 3 sentences. Every word must earn its place. If in doubt, cut it."
+    : "TWO PAGES: Include 4-5 bullets per role, 5-6 projects, expanded 3-4 sentence overview. Still be selective.";
+
+  return `You are an elite ATS-optimized resume tailoring engine for the Canadian tech job market (2026). Your output must pass Workday, Taleo, Lever, and Greenhouse ATS parsers AND impress a human recruiter in their 6-second scan.
+
+CANDIDATE DATA:
+${JSON.stringify(MD)}
+
+=== 2026 CANADIAN TECH RESUME RESEARCH (hard-coded rules) ===
+
+ATS COMPLIANCE (90% of recruiters use ATS):
+- Use standard section headings ONLY: "Professional Summary", "Technical Skills", "Education", "Professional Experience", "Projects"
+- Mirror EXACT keywords from the job posting in skills and bullets (ATS matches literal strings)
+- Distribute keywords across summary, skills, AND experience bullets (not just skills section)
+- Never use icons, tables, columns, or non-standard formatting terms
+
+BULLET POINT FORMULA (mandatory for ALL bullets):
+[Strong Action Verb] + [What You Did] + [Tool/Method Used] + [Quantified Result/Business Impact]
+- EVERY bullet MUST start with a different strong action verb: Developed, Engineered, Automated, Optimized, Deployed, Architected, Reduced, Accelerated, Designed, Implemented, Delivered, Built, Trained, Analyzed, Transformed, Extracted, Streamlined, Consolidated, Eliminated
+- EVERY bullet MUST contain at least ONE metric: percentage, dollar amount, time saved, dataset size, accuracy score, number of users/records/models
+- NEVER use weak verbs: Helped, Assisted, Worked on, Was responsible for, Participated in, Contributed to, Handled, Managed (without scope)
+- NEVER write duty descriptions. Only achievements with quantified outcomes.
+- Connect technical work to BUSINESS IMPACT: revenue, cost savings, efficiency gains, risk reduction, decision quality
+
+PROFESSIONAL SUMMARY RULES:
+- Start with the EXACT job title from the posting (e.g., "Data Analyst with..." or "Machine Learning Engineer with...")
+- Include: years of experience, 3-5 top matching skills, strongest quantified achievement, and degree
+- 2-3 sentences MAX. Every word must answer "Why should we interview this person?"
+- Mirror 3-5 keywords from the posting naturally
+
+SKILLS SECTION RULES:
+- Group into exactly 4 lines with labels that match the posting's language
+- Lead each line with the skills mentioned in the posting (order matters, recruiters scan left to right)
+- Include the EXACT tool names (not generic categories): "Python" not "programming", "Tableau" not "visualization tools"
+- Include specific libraries: pandas, NumPy, scikit-learn, PyTorch (not just "Python libraries")
+
+PROJECT RULES:
+- Each project bullet must follow the same action verb + tool + metric formula
+- Frame academic projects as professional deliverables with business impact language
+- Include deployment/production indicators where relevant (Docker, Hugging Face, Streamlit Cloud, Netlify)
+
+METRIC ACCURACY (CRITICAL — NEVER VIOLATE):
+- NEVER invent, inflate, or exaggerate metrics. Only use numbers that appear in the candidate data.
+- These are the ONLY accurate metrics you may use:
+  * 12% risk reduction (churn models)
+  * 8+ dashboards (Power BI/Tableau)
+  * 10 hours/week saved (manual reporting)
+  * 25% manual effort reduction (dashboards and VBA)
+  * 500K+ records (SQL pipelines)
+  * 40% faster reporting turnaround (ETL)
+  * 18% forecasting accuracy improvement (time-series)
+  * 50K+ transactions (JKL Python analysis)
+  * $30K cost savings identified (JKL procurement)
+  * 20% stockout reduction (JKL dashboards)
+  * 15% customer retention increase (JKL CRM)
+  * 18% delivery delay reduction (JKL supply chain)
+  * 15% system failure reduction (Huawei diagnostics)
+  * R2 > 0.91 (bike sharing), R2 = 0.9481 (Nashville housing)
+  * macro F1 0.9353 (Intel CV), 96% MLP / 95.39% RF (MNIST)
+  * 4,485 images, 11 classes (FruitNet)
+  * 847K+ records (bicycle accidents)
+  * 500K rows (Streamlit dashboard)
+  * 30+ content pieces (writing)
+  * 15+ presentations (stakeholder)
+- If you need a number not in this list, use the closest accurate one or omit the metric.
+- NEVER combine metrics to create larger fake numbers (e.g., don't add 8 dashboards + 10 JKL dashboards to claim 18+).
+
+TOOL/SKILL ACCURACY (CRITICAL):
+- ONLY include tools and technologies that appear in the candidate's skills data above.
+- NEVER add tools the candidate hasn't listed: no MATLAB, no Databricks, no Spark (unless PySpark), no Kubernetes, no Airflow, no dbt, no Looker, no BigQuery.
+- If the posting asks for a tool not in the candidate's skills, do NOT add it. Instead, emphasize the closest matching tool the candidate actually has.
+
+KEYWORD MIRRORING (CRITICAL):
+- Extract 5-10 exact phrases from the job posting and weave them verbatim into bullets and summary
+- If the posting says "data quality and reliability," use those exact words — not "data accuracy"
+- If the posting says "structured and unstructured data," use that exact phrase
+- If the posting says "production deployments," use that exact phrase
+- The goal is 80%+ keyword match with the posting's specific language
+
+CANADIAN MARKET SPECIFICS:
+- 1 page for <10 years experience (this candidate)
+- No photos, age, marital status, or religion
+- Include city only (Vancouver, BC), not full address
+- LinkedIn URL is expected (92% of Canadian recruiters check)
+- PGWP eligibility can be mentioned if posting asks about work authorization
+
+${pr}
+
+SELECTION RULES:
+- include_airtel: true ONLY if posting values telecom, engineering, monitoring, KPIs, or emphasizes Canadian work experience
+- include_writer: true ONLY if posting mentions technical writing, content creation, communication, documentation, or copywriting
+- certifications: select 1-3 most relevant from: ai_practice (AI/ML/data science roles), fin_accounting (finance/banking/analyst roles), semrush_seo (marketing/SEO/digital roles), linkedin_writing (writing/content roles). Always include ai_practice for any tech/data role.
+- ALWAYS include freelance and jkl (Jonathan Kings Limited) — they are core experience
+- ALWAYS include huawei — it shows engineering background
+- For jkl: select 3-4 best bullets matching the posting from: jkl_dashboards, jkl_reporting, jkl_python, jkl_crm, jkl_supply, jkl_stakeholder
+- Rewrite bullet text to echo the posting's exact terminology and keywords while keeping metrics accurate
+- Order projects by relevance to the posting, not by date
+
+=== ROLE-SPECIFIC TAILORING RULES (detect role type from posting and apply) ===
+
+IF ROLE IS "DATA ANALYST" or "QUANTITATIVE ANALYST" or "ANALYTICS":
+- Skills priority order: SQL (Advanced), Python (Advanced), Tableau/Power BI (Advanced), Excel, R, statistical analysis
+- Must-use keywords: data analysis, dashboards, KPIs, stakeholder communication, data-driven decisions, ETL, data quality, reporting
+- Lead with: JKL dashboards bullet, freelance SQL/dashboards bullets
+- Best projects: Streamlit dashboard, bicycle accidents (847K records), Steeves, Nashville housing
+- Emphasize: business impact, stakeholder communication, data visualization, cross-functional collaboration
+- Avoid leading with: deep learning, neural networks, computer vision (too ML-heavy for analyst roles)
+
+IF ROLE IS "DATA SCIENTIST":
+- Skills priority: Python (Advanced), R (Proficient), scikit-learn, PyTorch, TensorFlow, statistical modeling, ML algorithms
+- Must-use keywords: machine learning, predictive modeling, statistical analysis, A/B testing, feature engineering, model evaluation, hypothesis testing
+- Lead with: freelance churn models bullet, time-series forecasting bullet
+- Best projects: bike sharing (R2>0.91), credit risk SHAP, heart disease multi-model, Nashville housing (R2=0.9481)
+- Emphasize: model building, experimentation, statistical rigor, research methodology
+- Include coursework: Machine Learning, Statistical Modeling, Deep Learning, Predictive Analytics
+
+IF ROLE IS "ML ENGINEER" or "MACHINE LEARNING ENGINEER" or "AI ENGINEER":
+- Skills priority: Python (Advanced), PyTorch, TensorFlow, Docker, AWS, FastAPI, Git, CI/CD concepts
+- Must-use keywords: model deployment, production ML, deep learning, computer vision, NLP, API development, containerization, MLOps
+- Lead with: freelance churn models, JKL Python scripts
+- Best projects: FruitNet (Faster R-CNN, Docker, HuggingFace), Intel ResNet-18, text classification ULMFiT, LiDAR capstone
+- Emphasize: deployment, production systems, model serving, Docker, API design, scalability
+- Show GitHub link prominently — ML engineers check code
+
+IF ROLE IS "BUSINESS ANALYST" or "BI ANALYST" or "BUSINESS INTELLIGENCE":
+- Skills priority: Tableau (Advanced), Power BI (Advanced), Excel (Advanced), SQL, requirements gathering, stakeholder communication
+- Must-use keywords: business intelligence, requirements gathering, stakeholder alignment, cross-functional collaboration, KPI development, process improvement, data-driven decisions
+- Lead with: JKL stakeholder/dashboards bullets, freelance dashboards/presentations bullets
+- Best projects: Steeves (consulting), Cymax demand forecasting, Streamlit dashboard
+- Emphasize: business problem solving, stakeholder communication, process improvement, reporting
+- Include Financial Accounting certification
+
+IF ROLE IS "FINANCIAL ANALYST" or "QUANT" or "INVESTMENT" or "FINANCE":
+- Skills priority: Python (Advanced), SQL (Advanced), R (Proficient), Excel (Advanced, VBA), statistical modeling, time-series forecasting
+- Must-use keywords: financial modeling, risk analysis, quantitative analysis, forecasting, data quality, investment analytics, portfolio analysis, regression analysis, time-series
+- Lead with: JKL financial reporting bullet, freelance time-series bullet, freelance churn (risk modeling)
+- Best projects: credit risk SHAP, Nashville housing (regression), bike sharing (forecasting)
+- Include BOTH certifications: ai_practice AND fin_accounting
+- Emphasize: financial data, risk reduction, forecasting accuracy, P&L, data quality, large datasets
+- Mirror finance-specific language from posting (e.g., "alpha," "data assets," "investment engine," "data quality")
+
+IF ROLE IS "DATA ENGINEER" or "ANALYTICS ENGINEER":
+- Skills priority: SQL (Advanced), Python (Advanced), AWS (S3, Glue), PySpark, ETL, Docker, Git
+- Must-use keywords: ETL pipelines, data pipelines, data quality, data validation, cloud infrastructure, big data, data modeling, production deployment
+- Lead with: freelance SQL/ETL bullet, JKL Python scripts bullet
+- Best projects: AWS Glue PySpark, Streamlit dashboard, LiDAR capstone (data processing)
+- Emphasize: pipeline building, data quality, automation, cloud, scalability, reliability
+
+IF ROLE IS "MARKETING ANALYST" or "PRODUCT ANALYST" or "GROWTH ANALYST":
+- Skills priority: SQL, Python, Tableau, A/B testing, Google Analytics concepts, Excel
+- Must-use keywords: A/B testing, customer segmentation, conversion rates, campaign performance, funnel analysis, cohort analysis, user behavior, retention
+- Lead with: freelance churn bullet, JKL CRM bullet, freelance dashboards
+- Best projects: credit risk (churn), marketing campaign response, subscription renewal
+- Include semrush_seo certification
+- Emphasize: customer analytics, retention, segmentation, campaign optimization
+
+IF ROLE IS "TECHNICAL WRITER" or "CONTENT" or "DOCUMENTATION":
+- include_writer: true
+- Skills priority: Technical writing, documentation, APA formatting, Quarto, Markdown, stakeholder communication
+- Lead with: writer bullets, freelance presentations bullet
+- Best projects: Steeves (consulting documentation), Cymax (business proposal)
+- Include linkedin_writing certification
+
+DEFAULT (if role type unclear):
+- Balance between analyst and scientist positioning
+- Include a mix of SQL, Python, visualization, and ML skills
+- Select projects that show breadth: one dashboard, one ML model, one deployment
+
+OVERVIEW RULES (mandatory — this is CRITICAL):
+- The overview describes the CANDIDATE, not the job. NEVER describe what the role requires. NEVER start with "This role requires" or "The candidate needs."
+- MUST be written in FIRST PERSON PERSPECTIVE about Joseph. It is HIS summary, selling HIM.
+- MUST start with: "[Exact Job Title from posting] with 6+ years of experience in [2-3 matching skill areas]."
+- SECOND sentence: strongest quantified achievement that matches the posting (e.g., "Built predictive models reducing client risk by 12% and automated dashboards eliminating 10+ hours/week of manual reporting.")
+- THIRD sentence: education + what sets him apart (e.g., "Currently completing MS in Data Analytics (GPA 3.8) at Northeastern University with hands-on experience across [1-2 posting-relevant domains].")
+- NEVER exceed 3 sentences. NEVER describe job requirements. ONLY describe the candidate.
+- BAD example: "This role requires deep quantitative analysis and financial domain expertise." 
+- GOOD example: "Data Analyst with 6+ years of experience in Python, SQL, and financial analytics. Engineered predictive models reducing client risk exposure by 12% and built 10+ automated Power BI dashboards for revenue forecasting. Currently completing MS in Data Analytics (GPA 3.8) at Northeastern University with expertise in machine learning and business intelligence."
+
+COURSEWORK SELECTION:
+- Select 6-8 most relevant courses from the candidate's coursework array that match the posting
+- Return as coursework array in JSON
+
+KEY HIGHLIGHTS:
+- Generate exactly 3 bullet-point highlights — the candidate's top quantified wins most relevant to the posting
+- Format: short, punchy, numbers-forward (e.g., "Reduced client risk 12% through ML prediction models")
+
+SKILLS PROFICIENCY:
+- For the top 3-5 most important skills, add proficiency level in parentheses: (Advanced), (Proficient), or (Intermediate)
+- Python (Advanced), SQL (Advanced), R (Proficient), Tableau (Advanced), Power BI (Advanced) are the defaults — adjust if posting emphasizes different tools
+- This helps ATS match keywords like "advanced SQL" or "proficient in Python"
+
+MATCH SCORE:
+- Count how many required skills/qualifications from the posting are matched by the candidate
+- Return as match_score (0-100) and matched_keywords (array of matched terms)
+
+RESPOND WITH ONLY VALID JSON (no markdown, no explanation):
+{"overview":"string","target_title":"string","skills":[{"label":"string","items":"string"}],"coursework":["string"],"key_highlights":["string","string","string"],"match_score":number,"matched_keywords":["string"],"include_airtel":boolean,"include_writer":boolean,"certifications":["cert_id"],"freelance_bullets":["bullet_id"],"jkl_bullets":["bullet_id"],"huawei_bullets":["bullet_id"],"airtel_bullets":["bullet_id"],"writer_bullets":["bullet_id"],"projects":["project_id"],"filename_suffix":"string"}`;
 }
 
-var COVER_SYS = "You are a cover letter engine. Write a Problem-Solution format cover letter. JSON ONLY: {\"salutation\":\"str\",\"body\":\"str\",\"closing\":\"str\",\"company_name\":\"str\"}";
+// Research-backed cover letter system prompt (2026 best practices)
+// Sources: ResumeLab/UVA 2025, Resume Genius 2025, Interview Guys 2026, Kickresume 2026
+// Format: Problem-Solution (gold standard per Interview Guys 2026 analysis)
+// Length: 250-350 words (70% of HMs prefer 250-400, 49% prefer half-page)
+// Structure: 5-block (Header, Greeting, Hook, Body, Close)
+var COVER_SYS = `You are an elite cover letter writer using the PROBLEM-SOLUTION format, the gold standard for 2026 (per Interview Guys research of 80+ studies). 94% of hiring managers say cover letters influence decisions. 80% detect and reject generic AI content. Every word must be authentic and specific.
 
+CANDIDATE:
+- Name: ${MD.name} | ${MD.location} | ${MD.email} | ${MD.phone}
+- LinkedIn: ${MD.linkedin} | GitHub: ${MD.github}
+- Authorized to work in Canada (PGWP eligible)
+- MS Data Analytics, Northeastern University Vancouver (GPA 3.8/4.0, graduating Jun 2026)
+- B.Eng Electrical & Electronic Engineering, Obafemi Awolowo University Nigeria
+- 6+ years analytics: Full-time Data Analyst at Jonathan Kings Limited (logistics/retail/international business, 2021-2023: dashboards, Python analysis of 50K+ transactions, financial reporting, supply chain KPIs, $30K savings identified), freelance data analyst since 2019 (churn models -12% risk, Power BI/Tableau dashboards -25% manual effort, SQL pipelines 500K+ records, R time-series forecasting +18%), Huawei intern (diagnostics -15% failures)
+- Key projects: LiDAR point cloud with Lumotive (ROS2), Faster R-CNN FruitNet (4485 imgs, 11 classes, Docker+HuggingFace), bike sharing ML (R2>0.91, K-Means, PCA, Q-Learning), credit risk SHAP, ULMFiT text classification, Intel ResNet-18 transfer learning (F1=0.935), Nashville housing gradient boosting (R2=0.9481), JobForge React app, ResumeFit Netlify app, Amazon review Streamlit dashboard (500K rows), Steeves & Associates resource allocation (R/ggplot2), Nigerian election Chart.js dashboard, bicycle accidents Plotly dashboard (847K records), AWS Glue PySpark ETL, Cymax demand forecasting, workforce scheduling optimization
+- Skills: Python, R, SQL, JavaScript, PyTorch, TensorFlow, Scikit-learn, fastai, Docker, AWS, Tableau, Power BI, Streamlit, ggplot2, Git, FastAPI, ROS2
+
+PROBLEM-SOLUTION FORMAT (mandatory structure):
+
+PARAGRAPH 1 - THE HOOK (2-3 sentences):
+Identify a specific PROBLEM or CHALLENGE the company faces based on the job posting (their growth area, technical challenge, or business need). Show you understand it. Reference something concrete about the company. NEVER use "I am writing to express my interest" or "I am excited to apply" or any variation. Start with the company's challenge or an achievement.
+
+PARAGRAPH 2 - THE SOLUTION (3-4 sentences):
+Present yourself as the solution. Connect your 2-3 most relevant experiences DIRECTLY to their stated needs. Use specific metrics (12% risk reduction, 15% failure reduction, R2>0.91, 500K+ records). Mirror exact keywords from the job posting naturally.
+
+PARAGRAPH 3 - THE FIT (2-3 sentences):
+Explain WHY you specifically (not just anyone with these skills) are right for THIS company. Connect your engineering + analytics background to their unique challenges. Show genuine understanding of what the team does or the company's mission.
+
+PARAGRAPH 4 - THE CLOSE (1-2 sentences):
+Confident, forward-looking. Reference a specific aspect of the role you're eager to tackle. End with clear next step. NEVER use "I would welcome the opportunity" or "Thank you for considering my application."
+
+RULES:
+- 250-350 words TOTAL (70% of HMs prefer this range)
+- Every sentence answers "Why should we hire this person?"
+- Mirror 3-5 keywords from the posting naturally
+- Tone: Confident, specific, human. Like a sharp colleague wrote it, not a template
+- Sign as "${MD.name}"
+
+ONLY valid JSON, no markdown:
+{"company_name":"str","role_title":"str","date":"April 23, 2026","salutation":"Dear [name or Hiring Manager],","body":"str (use \\n\\n between paragraphs)","closing":"Sincerely,"}`;
+
+var C = {
+  bg: "#08090E", surface: "#10121A", surfaceR: "#161924",
+  border: "#1E2436", borderH: "#2D3650",
+  accent: "#4F8EF7", accentD: "#2B6CE6", accentS: "rgba(79,142,247,0.07)",
+  text: "#E4E8F1", textM: "#8D97AE", textD: "#586278",
+  success: "#2DD4A0", error: "#F06565", errorS: "rgba(240,101,101,0.06)",
+  emerald: "#2DD4A0", emeraldS: "rgba(45,212,160,0.07)",
+  amber: "#F5B731", amberS: "rgba(245,183,49,0.07)",
+  purple: "#A78BFA", purpleS: "rgba(167,139,250,0.07)",
 // ===== COLORS =====
 var C = {
   bg: "#0a0e14", surface: "#111827", border: "#1e293b",
@@ -128,6 +370,27 @@ export default function App() {
   var _covLoading = s(false), covLoading = _covLoading[0], setCovLoading = _covLoading[1];
   var _refineText = s(""), refineText = _refineText[0], setRefineText = _refineText[1];
   var _refining = s(false), refining = _refining[0], setRefining = _refining[1];
+
+  // Mock interview state
+  var _interviewQs = s([]), interviewQs = _interviewQs[0], setInterviewQs = _interviewQs[1];
+  var _interviewLoading = s(false), interviewLoading = _interviewLoading[0], setInterviewLoading = _interviewLoading[1];
+  var _myAnswer = s(""), myAnswer = _myAnswer[0], setMyAnswer = _myAnswer[1];
+  var _answerFeedback = s(null), answerFeedback = _answerFeedback[0], setAnswerFeedback = _answerFeedback[1];
+  var _activeQ = s(0), activeQ = _activeQ[0], setActiveQ = _activeQ[1];
+
+  // Follow-up email state
+  var _emailType = s("followup"), emailType = _emailType[0], setEmailType = _emailType[1];
+  var _emailResult = s(""), emailResult = _emailResult[0], setEmailResult = _emailResult[1];
+  var _emailLoading = s(false), emailLoading = _emailLoading[0], setEmailLoading = _emailLoading[1];
+
+  // Batch scoring state
+  var _batchUrls = s(""), batchUrls = _batchUrls[0], setBatchUrls = _batchUrls[1];
+  var _batchResults = s([]), batchResults = _batchResults[0], setBatchResults = _batchResults[1];
+  var _batchLoading = s(false), batchLoading = _batchLoading[0], setBatchLoading = _batchLoading[1];
+
+  // Salary state
+  var _salaryData = s(null), salaryData = _salaryData[0], setSalaryData = _salaryData[1];
+  var _salaryLoading = s(false), salaryLoading = _salaryLoading[0], setSalaryLoading = _salaryLoading[1];
 
   function reset() {
     setStatus("idle"); setRes(null); setCov(null); setPosting(""); setUrl("");
@@ -304,6 +567,75 @@ export default function App() {
     setChatLoading(false);
   }
 
+  // ===== MOCK INTERVIEW =====
+  async function handleGenInterviewQs() {
+    setInterviewLoading(true); setInterviewQs([]); setActiveQ(0); setAnswerFeedback(null);
+    try {
+      var sys = "Generate 8 interview questions for this role. Mix behavioral (STAR), technical, and situational. Based on the job posting AND the candidate resume gaps. JSON: {\"questions\":[{\"q\":\"str\",\"type\":\"behavioral|technical|situational\",\"hint\":\"str\"}]}";
+      var raw = await apiCall(sys, "Posting:\n" + posting.slice(0, 3000) + "\n\nCandidate resume:\n" + (rRef.current ? rRef.current.innerText.slice(0, 2000) : res.overview), 1200);
+      var d; try { d = JSON.parse(raw); } catch(e2) { throw new Error("Parse failed"); }
+      setInterviewQs(d.questions || []);
+    } catch(e) { setErr(e.message); }
+    setInterviewLoading(false);
+  }
+
+  async function handleScoreAnswer() {
+    if (!myAnswer.trim()) return;
+    setAnswerFeedback(null);
+    try {
+      var q = interviewQs[activeQ];
+      var sys = "Score this interview answer using STAR framework. Give: score (1-10), strengths, improvements, and a model answer. JSON: {\"score\":0,\"strengths\":\"str\",\"improvements\":\"str\",\"model_answer\":\"str\"}";
+      var raw = await apiCall(sys, "Question: " + q.q + "\nCandidate answer: " + myAnswer + "\nRole: " + (res.target_title || "") + "\nCandidate background: " + (res.overview || ""), 800);
+      var d; try { d = JSON.parse(raw); } catch(e2) { throw new Error("Parse failed"); }
+      setAnswerFeedback(d);
+    } catch(e) { setErr(e.message); }
+  }
+
+  // ===== FOLLOW-UP EMAIL =====
+  async function handleGenEmail() {
+    setEmailLoading(true); setEmailResult("");
+    try {
+      var sys = "Write a professional " + (emailType === "followup" ? "1-week follow-up email after applying" : emailType === "thankyou" ? "post-interview thank you email" : "2-week second follow-up email") + ". Keep it 4-6 sentences. Professional but warm. Reference specific role details. Return JUST the email text, no JSON.";
+      var raw = await apiCall(sys, "Role: " + (res.target_title || "") + "\nCompany: " + ((cov && cov.company_name) || "") + "\nCandidate: " + MD.name + "\nKey skill match: " + (res.overview || "").slice(0, 200), 500);
+      setEmailResult(raw);
+    } catch(e) { setErr(e.message); }
+    setEmailLoading(false);
+  }
+
+  // ===== BATCH SCORING =====
+  async function handleBatchScore() {
+    var urls = batchUrls.split("\n").map(function(u) { return u.trim(); }).filter(function(u) { return u.startsWith("http"); });
+    if (urls.length === 0) return;
+    setBatchLoading(true); setBatchResults([]);
+    var results = [];
+    for (var i = 0; i < Math.min(urls.length, 5); i++) {
+      try {
+        var sr = await fetch("/api/scrape", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urls[i] }) });
+        var sd = await sr.json();
+        if (sd.error) { results.push({ url: urls[i], error: sd.error }); continue; }
+        var sys = "Score this job against the candidate. Return JSON: {\"title\":\"str\",\"company\":\"str\",\"score\":0,\"verdict\":\"Apply now|Good fit|Stretch role|Skip\",\"reason\":\"str\"}";
+        var raw = await apiCall(sys, "Job posting:\n" + sd.text.slice(0, 2000) + "\n\nCandidate: " + JSON.stringify({ name: MD.name, skills: MD.skills, experience: MD.experience.length + " roles", projects: MD.projects.length + " projects" }), 500);
+        var d; try { d = JSON.parse(raw); } catch(e2) { d = { title: "Unknown", score: 0, verdict: "Error", reason: "Parse failed" }; }
+        d.url = urls[i];
+        results.push(d);
+      } catch(e) { results.push({ url: urls[i], error: e.message }); }
+    }
+    setBatchResults(results);
+    setBatchLoading(false);
+  }
+
+  // ===== SALARY LOOKUP =====
+  async function handleSalaryLookup() {
+    setSalaryLoading(true); setSalaryData(null);
+    try {
+      var sys = "Provide salary data for this role in Vancouver, Canada (2026). Include negotiation tips. JSON: {\"role\":\"str\",\"low\":0,\"mid\":0,\"high\":0,\"currency\":\"CAD\",\"source\":\"str\",\"tips\":[\"str\"],\"negotiation_script\":\"str\"}";
+      var raw = await apiCall(sys, "Role: " + (res.target_title || "") + "\nCompany: " + ((cov && cov.company_name) || "Unknown") + "\nCandidate experience: 6+ years analytics, MS Data Analytics\nLocation: Vancouver, BC", 800);
+      var d; try { d = JSON.parse(raw); } catch(e2) { throw new Error("Parse failed"); }
+      setSalaryData(d);
+    } catch(e) { setErr(e.message); }
+    setSalaryLoading(false);
+  }
+
   function doDownload(ref, filename) {
     if (!ref.current) return;
     var w = window.open("", "_blank");
@@ -376,6 +708,29 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* BATCH JOB SCORING */}
+        {status !== "done" && (
+          <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Batch Job Scoring</div>
+            <div style={{ fontSize: 12, color: C.textD, marginBottom: 8 }}>Paste up to 5 job URLs (one per line) to score them all against your profile</div>
+            <textarea value={batchUrls} onChange={function(e) { setBatchUrls(e.target.value); }} placeholder={"https://example.com/job1\nhttps://example.com/job2\nhttps://example.com/job3"} style={Object.assign({}, iS, { minHeight: 80, resize: "vertical", marginBottom: 8 })} />
+            <button onClick={handleBatchScore} disabled={batchLoading} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#8b5cf6", color: "#fff", fontSize: 12, fontWeight: 600, cursor: batchLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{batchLoading ? "Scoring..." : "Score All Jobs"}</button>
+            {batchResults.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                {batchResults.map(function(r, i) { return <div key={i} style={{ padding: "10px 14px", background: C.bg, border: "1px solid " + C.border, borderRadius: 10, marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0, background: r.score >= 80 ? "rgba(16,185,129,0.08)" : r.score >= 60 ? "rgba(245,158,11,0.08)" : "rgba(239,68,68,0.08)", color: r.score >= 80 ? C.success : r.score >= 60 ? "#f59e0b" : C.error }}>{r.error ? "!" : r.score + "%"}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{r.error ? "Error" : r.title}</div>
+                    <div style={{ fontSize: 11, color: C.textD }}>{r.error || (r.company + " — " + r.verdict)}</div>
+                    {r.reason && <div style={{ fontSize: 11, color: C.textM, marginTop: 2 }}>{r.reason}</div>}
+                  </div>
+                </div>; })}
+              </div>
+            )}
+          </div>
+        )}
+
 
         {/* ===== RESULTS ===== */}
         {status === "done" && res && (
@@ -500,6 +855,77 @@ export default function App() {
                 <input value={chatInput} onChange={function(e) { setChatInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") handleChat(); }} placeholder="Ask about fit, gaps, or interview prep..." style={Object.assign({}, iS, { flex: 1 })} />
                 <button onClick={handleChat} disabled={!chatInput.trim() || chatLoading} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: chatInput.trim() ? C.accent : C.border, color: chatInput.trim() ? "#fff" : C.textD, fontSize: 12, fontWeight: 600, cursor: chatInput.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Ask</button>
               </div>
+            </div>
+
+
+            {/* MOCK INTERVIEW PREP */}
+            <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Mock Interview Prep</div>
+                <button onClick={handleGenInterviewQs} disabled={interviewLoading} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "#8b5cf6", color: "#fff", fontSize: 12, fontWeight: 600, cursor: interviewLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{interviewLoading ? "Generating..." : interviewQs.length > 0 ? "Regenerate" : "Generate Questions"}</button>
+              </div>
+              {interviewQs.length > 0 && (
+                <div>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                    {interviewQs.map(function(q, i) { return <button key={i} onClick={function() { setActiveQ(i); setMyAnswer(""); setAnswerFeedback(null); }} style={{ padding: "4px 10px", borderRadius: 6, border: i === activeQ ? "1.5px solid #8b5cf6" : "1px solid " + C.border, background: i === activeQ ? "rgba(139,92,246,0.08)" : "transparent", color: i === activeQ ? "#8b5cf6" : C.textD, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{"Q" + (i + 1)}</button>; })}
+                  </div>
+                  <div style={{ padding: "12px 16px", background: C.bg, borderRadius: 10, marginBottom: 10 }}>
+                    <div style={{ fontSize: 10, color: "#8b5cf6", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>{interviewQs[activeQ].type}</div>
+                    <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.5 }}>{interviewQs[activeQ].q}</div>
+                    <div style={{ fontSize: 11, color: C.textD, marginTop: 4 }}>{"Hint: " + interviewQs[activeQ].hint}</div>
+                  </div>
+                  <textarea value={myAnswer} onChange={function(e) { setMyAnswer(e.target.value); }} placeholder="Type your answer... Use STAR format (Situation, Task, Action, Result)" style={Object.assign({}, iS, { minHeight: 80, resize: "vertical", marginBottom: 8 })} />
+                  <button onClick={handleScoreAnswer} disabled={!myAnswer.trim()} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: myAnswer.trim() ? "#8b5cf6" : C.border, color: "#fff", fontSize: 12, fontWeight: 600, cursor: myAnswer.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Score My Answer</button>
+                  {answerFeedback && (
+                    <div style={{ marginTop: 10, padding: "12px 16px", background: C.bg, borderRadius: 10, fontSize: 12, lineHeight: 1.6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <div style={{ fontSize: 20, fontWeight: 700, color: answerFeedback.score >= 7 ? C.success : answerFeedback.score >= 5 ? "#f59e0b" : C.error }}>{answerFeedback.score + "/10"}</div>
+                      </div>
+                      <div style={{ marginBottom: 6 }}><span style={{ color: C.success, fontWeight: 600 }}>{"Strengths: "}</span>{answerFeedback.strengths}</div>
+                      <div style={{ marginBottom: 6 }}><span style={{ color: "#f59e0b", fontWeight: 600 }}>{"Improve: "}</span>{answerFeedback.improvements}</div>
+                      <div style={{ padding: "8px 12px", background: "rgba(59,130,246,0.04)", borderLeft: "3px solid " + C.accent, borderRadius: "0 8px 8px 0", marginTop: 8 }}><span style={{ fontWeight: 600 }}>{"Model answer: "}</span>{answerFeedback.model_answer}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* FOLLOW-UP EMAIL */}
+            <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Follow-up Emails</div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                {[["followup", "1-Week Follow-up"], ["thankyou", "Thank You"], ["second", "2-Week Follow-up"]].map(function(t) { return <button key={t[0]} onClick={function() { setEmailType(t[0]); setEmailResult(""); }} style={{ padding: "5px 12px", borderRadius: 6, border: emailType === t[0] ? "1.5px solid " + C.accent : "1px solid " + C.border, background: emailType === t[0] ? "rgba(59,130,246,0.08)" : "transparent", color: emailType === t[0] ? C.accent : C.textD, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{t[1]}</button>; })}
+              </div>
+              <button onClick={handleGenEmail} disabled={emailLoading} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", fontSize: 12, fontWeight: 600, cursor: emailLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{emailLoading ? "Writing..." : "Generate Email"}</button>
+              {emailResult && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ padding: "14px 16px", background: C.bg, borderRadius: 10, fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{emailResult}</div>
+                  <button onClick={function() { navigator.clipboard.writeText(emailResult); }} style={{ marginTop: 8, padding: "6px 14px", borderRadius: 6, border: "1px solid " + C.border, background: "transparent", color: C.textM, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Copy to clipboard</button>
+                </div>
+              )}
+            </div>
+
+            {/* SALARY INTELLIGENCE */}
+            <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>Salary Intelligence</div>
+                <button onClick={handleSalaryLookup} disabled={salaryLoading} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.success, color: "#fff", fontSize: 12, fontWeight: 600, cursor: salaryLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{salaryLoading ? "Looking up..." : "Get Salary Data"}</button>
+              </div>
+              {salaryData && (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 12 }}>
+                    {[["Low", salaryData.low, "#f59e0b"], ["Mid", salaryData.mid, C.success], ["High", salaryData.high, C.accent]].map(function(d) { return <div key={d[0]} style={{ background: C.bg, borderRadius: 10, padding: "12px 14px", textAlign: "center" }}><div style={{ fontSize: 10, color: C.textD, marginBottom: 4 }}>{d[0]}</div><div style={{ fontSize: 18, fontWeight: 700, color: d[2] }}>{"$" + Math.round(d[1] / 1000) + "K"}</div></div>; })}
+                  </div>
+                  {salaryData.tips && salaryData.tips.map(function(tip, i) { return <div key={i} style={{ fontSize: 12, marginBottom: 3, paddingLeft: 10, lineHeight: 1.5 }}>{"\u2022 " + tip}</div>; })}
+                  {salaryData.negotiation_script && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Negotiation Script</div>
+                      <div style={{ padding: "12px 14px", background: C.bg, borderRadius: 10, fontSize: 12, lineHeight: 1.6, borderLeft: "3px solid " + C.success }}>{salaryData.negotiation_script}</div>
+                      <button onClick={function() { navigator.clipboard.writeText(salaryData.negotiation_script); }} style={{ marginTop: 8, padding: "6px 14px", borderRadius: 6, border: "1px solid " + C.border, background: "transparent", color: C.textM, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Copy script</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {err && <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", color: C.error, fontSize: 12 }}>{err}</div>}
