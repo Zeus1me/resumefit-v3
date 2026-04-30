@@ -178,6 +178,27 @@ export default function App() {
     return text.replace(/```json/g, "").replace(/```/g, "").trim();
   }
 
+  // ===== Q&A STATE =====
+  var _questions = s([{q:"",a:""}]), questions = _questions[0], setQuestions = _questions[1];
+  var _qaGenerated = s(false), qaGenerated = _qaGenerated[0], setQaGenerated = _qaGenerated[1];
+  var _qaLoading = s(false), qaLoading = _qaLoading[0], setQaLoading = _qaLoading[1];
+
+  // ===== CHAT STATE =====
+  var _chatMsgs = s([]), chatMsgs = _chatMsgs[0], setChatMsgs = _chatMsgs[1];
+  var _chatInput = s(""), chatInput = _chatInput[0], setChatInput = _chatInput[1];
+  var _chatLoading = s(false), chatLoading = _chatLoading[0], setChatLoading = _chatLoading[1];
+
+  // ===== DASHBOARD STATE =====
+
+  function reset() {
+    setStatus("idle"); setRes(null); setCov(null); setPosting(""); setUrl("");
+    setErr(""); setProg(""); setInstr(""); setTab("resume"); setCopied(false);
+    setCovLoading(false); setGenType("resume"); setRefineText(""); setRefining(false);
+    setQuestions([{q:"",a:""}]); setQaGenerated(false); setQaLoading(false);
+    setChatMsgs([]); setChatInput(""); // build;
+  }
+
+  // ===== HANDLERS =====
   async function handleGo() {
     setErr(""); setStatus("loading"); setProg("Preparing...");
     try {
@@ -191,29 +212,102 @@ export default function App() {
         setPosting(postText);
       }
       if (!postText || postText.length < 30) throw new Error("Please paste a job posting (at least 30 characters).");
-
       setProg("Tailoring resume...");
       var extra = instr.trim() ? "\nADDITIONAL INSTRUCTIONS: " + instr.trim() : "";
       var raw = await apiCall(makeResumeSys(pages), "Job posting:\n" + postText + extra, pages === 2 ? 2000 : 1500);
       var p;
-      try { p = JSON.parse(raw); } catch (e2) { throw new Error("Resume parse failed. Try again."); }
+      try { p = JSON.parse(raw); } catch(e2) { throw new Error("Resume parse failed. Try again."); }
       setRes(p);
-
       var cp = null;
       if (genType === "both") {
         setProg("Writing cover letter...");
         var cRaw = await apiCall(COVER_SYS, "Job posting:\n" + postText + extra + "\n\nResume overview: " + p.overview + "\nTarget role: " + p.target_title, 1500);
-        try { cp = JSON.parse(cRaw); } catch (e3) { throw new Error("Cover letter parse failed."); }
+        try { cp = JSON.parse(cRaw); } catch(e3) { throw new Error("Cover letter parse failed."); }
         setCov(cp);
       }
-      setStatus("done"); setProg("");
-    } catch (e) { setErr(e.message); setStatus("idle"); setProg(""); }
+      setStatus("done"); setProg(""); // results;
+
+    } catch(e) { setErr(e.message); setStatus("idle"); setProg(""); }
+  }
+
+  async function handleCoverAfter() {
+    setCovLoading(true); setErr("");
+    try {
+      var cRaw = await apiCall(COVER_SYS, "Job posting:\n" + posting + "\n\nResume overview: " + res.overview + "\nTarget: " + res.target_title, 1500);
+      var cp;
+      try { cp = JSON.parse(cRaw); } catch(e2) { throw new Error("Cover letter parse failed."); }
+      setCov(cp);
+    } catch(e) { setErr(e.message); }
+    setCovLoading(false);
+  }
+
+  async function handleRefine() {
+    if (!refineText.trim()) return;
+    setRefining(true); setErr("");
+    var allInstr = (instr.trim() ? instr.trim() + "\n" : "") + refineText.trim();
+    try {
+      var raw = await apiCall(makeResumeSys(pages), "Job posting:\n" + posting + "\nADDITIONAL INSTRUCTIONS: " + allInstr, pages === 2 ? 2000 : 1500);
+      var p;
+      try { p = JSON.parse(raw); } catch(e2) { throw new Error("Resume parse failed."); }
+      setRes(p);
+      if (cov) {
+        var cRaw = await apiCall(COVER_SYS, "Job posting:\n" + posting + "\nADDITIONAL INSTRUCTIONS: " + allInstr + "\n\nResume overview: " + p.overview + "\nTarget: " + p.target_title, 1500);
+        var cp;
+        try { cp = JSON.parse(cRaw); } catch(e3) { throw new Error("Cover letter parse failed."); }
+        setCov(cp);
+      }
+      setInstr(allInstr); setRefineText("");
+      setChatMsgs(function(prev) { return prev.concat([{ role: "system", text: "Resume refined. Ask me to evaluate the updated version." }]); });
+
+    } catch(e) { setErr(e.message); }
+    setRefining(false);
+  }
+
+  async function handleQA() {
+    setQaLoading(true); setErr("");
+    try {
+      var qs = questions.filter(function(q) { return q.q.trim(); }).map(function(q) { return q.q; });
+      if (qs.length === 0) throw new Error("Add at least one question.");
+      var qSys = "Answer job application questions for candidate " + MD.name + ". Use their experience and the posting. 2-5 sentences per answer unless simple. JSON: {\"answers\":[\"str\"]}";
+      var raw = await apiCall(qSys, "Posting:\n" + posting.slice(0, 3000) + "\n\nQuestions:\n" + qs.map(function(q, i) { return (i + 1) + ". " + q; }).join("\n"), 1200);
+      var d;
+      try { d = JSON.parse(raw); } catch(e2) { throw new Error("Q&A parse failed."); }
+      var newQ = questions.map(function(q, i) { return { q: q.q, a: d.answers && d.answers[i] ? d.answers[i] : "" }; });
+      setQuestions(newQ); setQaGenerated(true);
+    } catch(e) { setErr(e.message); }
+    setQaLoading(false);
+  }
+
+  async function handleChat() {
+    if (!chatInput.trim() || chatLoading) return;
+    var msg = chatInput.trim();
+    setChatInput("");
+    setChatMsgs(function(prev) { return prev.concat([{ role: "user", text: msg }]); });
+    setChatLoading(true);
+    try {
+      var resumeText = rRef.current ? rRef.current.innerText : "Resume not available";
+      var coverText = cRef.current ? "\n\nCover Letter:\n" + cRef.current.innerText : "";
+      var chatSys = "You are a career advisor. Evaluate the resume against the job posting. Score out of 10. Be specific.";
+      var fullMsg = "RESUME:\n" + resumeText + coverText + "\n\nJOB POSTING:\n" + posting.slice(0, 4000) + "\n\nQuestion: " + msg;
+      var r = await fetch("/api/tailor", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1200, system: chatSys, messages: [{ role: "user", content: fullMsg }] })
+      });
+      var d = await r.json();
+      if (d.error) throw new Error(d.error.message || "API error");
+      var reply = "";
+      if (d.content) { for (var i = 0; i < d.content.length; i++) { if (d.content[i].text) reply += d.content[i].text; } }
+      setChatMsgs(function(prev) { return prev.concat([{ role: "assistant", text: reply.trim() }]); });
+    } catch(e) {
+      setChatMsgs(function(prev) { return prev.concat([{ role: "assistant", text: "Error: " + e.message }]); });
+    }
+    setChatLoading(false);
   }
 
   function doDownload(ref, filename) {
     if (!ref.current) return;
     var w = window.open("", "_blank");
-    w.document.write("<!DOCTYPE html><html><head><title>" + filename + "</title><link href='https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' rel='stylesheet'><style>*{box-sizing:border-box;margin:0;padding:0}html,body{background:#fff}body{font-family:'DM Sans',sans-serif;padding:40px 52px;color:#1a1a1a;line-height:1.5;max-width:800px;margin:0 auto}a{color:#1E3A5F;text-decoration:underline}@media print{body{padding:0}@page{margin:0.5in}}</style></head><body>" + ref.current.innerHTML + "</body></html>");
+    w.document.write("<!DOCTYPE html><html><head><title>" + filename + "</title><link href='https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap' rel='stylesheet'><style>*{box-sizing:border-box;margin:0;padding:0}html,body{background:#fff}body{font-family:'DM Sans',sans-serif;padding:40px 52px;color:#1a1a1a;line-height:1.5;max-width:800px;margin:0 auto}a{color:#1E3A5F}@media print{body{padding:0}@page{margin:0.5in}}</style></head><body>" + ref.current.innerHTML + "</body></html>");
     w.document.close();
     setTimeout(function() { w.print(); }, 600);
   }
@@ -221,31 +315,31 @@ export default function App() {
   function doCopy(ref) {
     if (!ref.current) return;
     navigator.clipboard.writeText(ref.current.innerText);
-    setCopied(true);
-    setTimeout(function() { setCopied(false); }, 2000);
+    setCopied(true); setTimeout(function() { setCopied(false); }, 2000);
   }
 
   // ===== RENDER =====
-  var inputStyle = { width: "100%", background: C.bg, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", color: C.text, outline: "none", boxSizing: "border-box" };
+  var iS = { width: "100%", background: C.bg, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", color: C.text, outline: "none", boxSizing: "border-box" };
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif" }}>
 
+      {/* HEADER */}
       <div style={{ borderBottom: "1px solid " + C.border, padding: "14px 20px", background: C.surface }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={reset}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>Rf</div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>ResumeFit</div>
-              <div style={{ fontSize: 10, color: C.textD }}>AI RESUME TAILORING</div>
-            </div>
+            <div><div style={{ fontSize: 15, fontWeight: 700 }}>ResumeFit</div><div style={{ fontSize: 10, color: C.textD }}>AI CAREER PLATFORM</div></div>
           </div>
-          {status === "done" && <button onClick={reset} style={{ padding: "7px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: C.accent, color: "#fff" }}>+ New</button>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={reset} style={{ padding: "7px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: C.accent, color: "#fff" }}>+ New</button>
+          </div>
         </div>
       </div>
 
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
 
+        {/* ===== BUILDER ===== */}
         {status !== "done" && (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" }}>
             <div style={{ display: "flex", borderBottom: "1px solid " + C.border }}>
@@ -254,22 +348,18 @@ export default function App() {
             </div>
             <div style={{ padding: 20 }}>
               {mode === "text" ? (
-                <textarea value={posting} onChange={function(e) { setPosting(e.target.value); }} placeholder="Paste the full job posting here..." style={Object.assign({}, inputStyle, { minHeight: 150, resize: "vertical" })} />
+                <textarea value={posting} onChange={function(e) { setPosting(e.target.value); }} placeholder="Paste the full job posting here..." style={Object.assign({}, iS, { minHeight: 150, resize: "vertical" })} />
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ color: C.textD }}>🔗</span>
-                  <input value={url} onChange={function(e) { setUrl(e.target.value); }} placeholder="https://example.com/jobs/..." style={inputStyle} />
-                </div>
+                <input value={url} onChange={function(e) { setUrl(e.target.value); }} placeholder="https://example.com/jobs/..." style={iS} />
               )}
               <div style={{ marginTop: 16 }}>
                 <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: C.textM }}>Extra Instructions <span style={{ fontWeight: 400 }}>optional</span></div>
-                <textarea value={instr} onChange={function(e) { setInstr(e.target.value); }} placeholder='e.g. "Emphasize Python & cloud", "Highlight Lumotive capstone"' style={Object.assign({}, inputStyle, { minHeight: 60, resize: "vertical" })} />
+                <textarea value={instr} onChange={function(e) { setInstr(e.target.value); }} placeholder='e.g. "Emphasize Python", "Highlight capstone"' style={Object.assign({}, iS, { minHeight: 60, resize: "vertical" })} />
               </div>
               <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                   <span style={{ color: C.textM }}>Pages:</span>
-                  <button onClick={function() { setPages(1); }} style={{ padding: "4px 12px", borderRadius: 6, border: pages === 1 ? "1.5px solid " + C.accent : "1px solid " + C.border, background: pages === 1 ? "rgba(59,130,246,0.08)" : "transparent", color: pages === 1 ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>1</button>
-                  <button onClick={function() { setPages(2); }} style={{ padding: "4px 12px", borderRadius: 6, border: pages === 2 ? "1.5px solid " + C.accent : "1px solid " + C.border, background: pages === 2 ? "rgba(59,130,246,0.08)" : "transparent", color: pages === 2 ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>2</button>
+                  {[1, 2].map(function(n) { return <button key={n} onClick={function() { setPages(n); }} style={{ padding: "4px 12px", borderRadius: 6, border: pages === n ? "1.5px solid " + C.accent : "1px solid " + C.border, background: pages === n ? "rgba(59,130,246,0.08)" : "transparent", color: pages === n ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>{n}</button>; })}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                   <span style={{ color: C.textM }}>Generate:</span>
@@ -282,160 +372,137 @@ export default function App() {
                   {status === "loading" ? prog : genType === "both" ? "Generate Both" : "Generate Resume"}
                 </button>
               </div>
-              {err && <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: C.error, fontSize: 12 }}>{err}</div>}
+              {err && <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", color: C.error, fontSize: 12 }}>{err}</div>}
             </div>
           </div>
         )}
 
+        {/* ===== RESULTS ===== */}
         {status === "done" && res && (
           <div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+            {/* Toolbar */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
               <button onClick={function() { setTab("resume"); }} style={{ padding: "8px 20px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: tab === "resume" ? C.accent : C.surface, color: tab === "resume" ? "#fff" : C.textM }}>Resume</button>
               {cov && <button onClick={function() { setTab("cover"); }} style={{ padding: "8px 20px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: tab === "cover" ? C.accent : C.surface, color: tab === "cover" ? "#fff" : C.textM }}>Cover Letter</button>}
+              {qaGenerated && <button onClick={function() { setTab("qa"); }} style={{ padding: "8px 20px", borderRadius: 8, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: tab === "qa" ? C.accent : C.surface, color: tab === "qa" ? "#fff" : C.textM }}>Q&A</button>}
               <div style={{ flex: 1 }} />
               <span style={{ fontSize: 12, color: C.success }}>{"✓ " + res.target_title}</span>
-              <button onClick={function() { doCopy(tab === "resume" ? rRef : cRef); }} style={{ padding: "7px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontFamily: "inherit", border: "1px solid " + C.border, background: C.surface, color: C.text }}>{copied ? "Copied!" : "Copy"}</button>
+              <button onClick={function() { doCopy(tab === "resume" ? rRef : tab === "cover" ? cRef : qaRef); }} style={{ padding: "7px 14px", borderRadius: 7, fontSize: 12, cursor: "pointer", fontFamily: "inherit", border: "1px solid " + C.border, background: C.surface, color: C.text }}>{copied ? "Copied!" : "Copy"}</button>
               <button onClick={function() {
-                var company = (cov ? cov.company_name : res.filename_suffix || "company").replace(/[^a-zA-Z0-9]/g, "_");
-                var fname = tab === "resume" ? "Joseph_Eyinade_" + (res.target_title || "").replace(/[^a-zA-Z0-9]/g, "_") + "_" + company : "Cover_Letter_" + company;
-                doDownload(tab === "resume" ? rRef : cRef, fname);
+                var co = ((cov && cov.company_name) || res.filename_suffix || "company").replace(/[^a-zA-Z0-9]/g, "_");
+                var role = (res.target_title || "role").replace(/[^a-zA-Z0-9]/g, "_");
+                var fn = tab === "resume" ? "Joseph_Eyinade_" + role + "_" + co : tab === "cover" ? "Cover_Letter_" + co : "QA_" + co;
+                doDownload(tab === "resume" ? rRef : tab === "cover" ? cRef : qaRef, fn);
               }} style={{ padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: C.success, color: "#fff" }}>Download PDF</button>
+
             </div>
 
+            {/* ATS Score */}
             {res.match_score > 0 && (
-              <div style={{ marginBottom: 14, padding: "10px 16px", borderRadius: 10, background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: res.match_score >= 80 ? C.success : "#f59e0b" }}>{res.match_score}%</div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600 }}>ATS Match Score</div>
-                  <div style={{ fontSize: 11, color: C.textD }}>{(res.matched_keywords || []).join(", ")}</div>
-                </div>
+              <div style={{ marginBottom: 14, padding: "10px 16px", borderRadius: 10, background: C.surface, border: "1px solid " + C.border, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: res.match_score >= 80 ? C.success : "#f59e0b" }}>{res.match_score}%</div>
+                <div><div style={{ fontSize: 12, fontWeight: 600 }}>ATS Match Score</div><div style={{ fontSize: 11, color: C.textD }}>{(res.matched_keywords || []).slice(0, 8).join(", ")}</div></div>
               </div>
             )}
 
+            {/* Resume */}
             {tab === "resume" && (
               <div ref={rRef} style={{ background: "#fff", borderRadius: 12, padding: "28px 36px", color: "#1a1a1a", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.4, boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
-                <div style={{ textAlign: "center", marginBottom: 2 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: "#1E3A5F", letterSpacing: "0.05em" }}>{MD.name.toUpperCase()}</div>
-                </div>
+                <div style={{ textAlign: "center", marginBottom: 2 }}><div style={{ fontSize: 20, fontWeight: 700, color: "#1E3A5F", letterSpacing: "0.05em" }}>{MD.name.toUpperCase()}</div></div>
                 <div style={{ textAlign: "center", fontSize: 10.5, color: "#777", marginBottom: 1 }}>{MD.location + " | " + MD.email + " | " + MD.phone}</div>
-                <div style={{ textAlign: "center", fontSize: 10.5, marginBottom: 1 }}>
-                  <a href={"https://www." + MD.linkedin} style={{ color: "#1E3A5F" }}>{MD.linkedin}</a>{" | "}<a href={"https://" + MD.github} style={{ color: "#1E3A5F" }}>{MD.github}</a>
-                </div>
+                <div style={{ textAlign: "center", fontSize: 10.5, marginBottom: 1 }}><a href={"https://www." + MD.linkedin} style={{ color: "#1E3A5F" }}>{MD.linkedin}</a>{" | "}<a href={"https://" + MD.github} style={{ color: "#1E3A5F" }}>{MD.github}</a></div>
                 <div style={{ textAlign: "center", fontSize: 9.5, color: "#555", fontStyle: "italic", marginBottom: 8 }}>Authorized to work in Canada (PGWP eligible)</div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>PROFESSIONAL SUMMARY</div>
                 <p style={{ fontSize: 10.5, color: "#333", margin: "3px 0 2px", lineHeight: 1.5 }}>{res.overview}</p>
-                {res.key_highlights && res.key_highlights.map(function(h, i) { return <div key={i} style={{ fontSize: 10, color: "#333", paddingLeft: 10, lineHeight: 1.4 }}>{"• " + h}</div>; })}
+                {res.key_highlights && res.key_highlights.map(function(h, i) { return <div key={i} style={{ fontSize: 10, color: "#333", paddingLeft: 10 }}>{"• " + h}</div>; })}
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>TECHNICAL SKILLS</div>
-                {res.skills && res.skills.map(function(sk, i) { return <div key={i} style={{ fontSize: 10.5, marginBottom: 1 }}><span style={{ fontWeight: 600 }}>{sk.label}: </span><span style={{ color: "#333" }}>{sk.items}</span></div>; })}
+                {res.skills && res.skills.map(function(sk, i) { return <div key={i} style={{ fontSize: 10.5, marginBottom: 1 }}><span style={{ fontWeight: 600 }}>{sk.label}: </span>{sk.items}</div>; })}
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>EDUCATION</div>
-                {MD.education.map(function(ed, i) {
-                  return (
-                    <div key={i} style={{ marginBottom: 3 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span style={{ fontWeight: 600 }}>{ed.degree}</span><span style={{ color: "#777" }}>{ed.dates}</span></div>
-                      <div style={{ fontSize: 10, color: "#777", fontStyle: "italic", display: "flex", justifyContent: "space-between" }}><span>{ed.school}</span>{ed.gpa && <span>{"GPA: " + ed.gpa}</span>}</div>
-                      {i === 0 && res.coursework && <div style={{ fontSize: 9.5, color: "#666", marginTop: 1 }}>{"Relevant Coursework: " + res.coursework.join(", ")}</div>}
-                    </div>
-                  );
-                })}
+                {MD.education.map(function(ed, i) { return <div key={i} style={{ marginBottom: 3 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span style={{ fontWeight: 600 }}>{ed.degree}</span><span style={{ color: "#777" }}>{ed.dates}</span></div>
+                  <div style={{ fontSize: 10, color: "#777", fontStyle: "italic", display: "flex", justifyContent: "space-between" }}><span>{ed.school}</span>{ed.gpa && <span>{"GPA: " + ed.gpa}</span>}</div>
+                  {i === 0 && res.coursework && <div style={{ fontSize: 9.5, color: "#666", marginTop: 1 }}>{"Relevant Coursework: " + res.coursework.join(", ")}</div>}
+                </div>; })}
 
-                {res.certifications && res.certifications.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>CERTIFICATIONS</div>
-                    {res.certifications.map(function(cid) {
-                      var cert = null;
-                      for (var i = 0; i < MD.certifications.length; i++) { if (MD.certifications[i].id === cid) cert = MD.certifications[i]; }
-                      if (!cert) return null;
-                      return <div key={cid} style={{ fontSize: 10.5, marginBottom: 1 }}><span style={{ fontWeight: 600 }}>{cert.name}</span><span style={{ color: "#777" }}>{" — " + cert.issuer + " (" + cert.date + ")"}</span></div>;
-                    })}
-                  </div>
-                )}
+                {res.certifications && res.certifications.length > 0 && <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>CERTIFICATIONS</div>
+                  {res.certifications.map(function(cid) { var cert = null; for (var i = 0; i < MD.certifications.length; i++) { if (MD.certifications[i].id === cid) cert = MD.certifications[i]; } if (!cert) return null; return <div key={cid} style={{ fontSize: 10.5, marginBottom: 1 }}><span style={{ fontWeight: 600 }}>{cert.name}</span><span style={{ color: "#777" }}>{" — " + cert.issuer + " (" + cert.date + ")"}</span></div>; })}
+                </div>}
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>PROFESSIONAL EXPERIENCE</div>
-                {["freelance", "jkl", "huawei"].map(function(eid) {
-                  var exp = getExp(eid);
-                  var buls = getBul(eid, res[eid + "_bullets"] || []);
-                  if (!exp) return null;
-                  return (
-                    <div key={eid} style={{ marginBottom: 5 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>
-                      {buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}
-                    </div>
-                  );
-                })}
-                {res.include_writer && (function() {
-                  var exp = getExp("writer");
-                  var buls = getBul("writer", res.writer_bullets || []);
-                  if (!exp) return null;
-                  return (
-                    <div style={{ marginBottom: 5 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>
-                      {buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}
-                    </div>
-                  );
-                })()}
-                {res.include_airtel && (function() {
-                  var exp = getExp("airtel");
-                  var buls = getBul("airtel", res.airtel_bullets || []);
-                  if (!exp) return null;
-                  return (
-                    <div style={{ marginBottom: 5 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>
-                      {buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}
-                    </div>
-                  );
-                })()}
+                {["freelance", "jkl", "huawei"].map(function(eid) { var exp = getExp(eid); var buls = getBul(eid, res[eid + "_bullets"] || []); if (!exp) return null; return <div key={eid} style={{ marginBottom: 5 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>{buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}</div>; })}
+                {res.include_writer && (function() { var exp = getExp("writer"); var buls = getBul("writer", res.writer_bullets || []); if (!exp) return null; return <div style={{ marginBottom: 5 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>{buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}</div>; })()}
+                {res.include_airtel && (function() { var exp = getExp("airtel"); var buls = getBul("airtel", res.airtel_bullets || []); if (!exp) return null; return <div style={{ marginBottom: 5 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{exp.title}</span><span style={{ color: "#777" }}>{" | " + exp.company}</span></span><span style={{ color: "#777" }}>{exp.dates}</span></div>{buls.map(function(b, i) { return <div key={i} style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10, lineHeight: 1.45 }}>{"• " + b.text}</div>; })}</div>; })()}
 
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1E3A5F", borderBottom: "1.5px solid #1E3A5F", paddingBottom: 1, marginTop: 7, marginBottom: 3 }}>PROJECTS</div>
-                {(res.projects || []).map(function(pid) {
-                  var p = getProj(pid);
-                  if (!p) return null;
-                  return (
-                    <div key={pid} style={{ marginBottom: 3 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
-                        <span><span style={{ fontWeight: 600 }}>{p.title}</span>{p.url && <span>{" | "}<a href={"https://" + p.url} style={{ color: "#1E3A5F", fontSize: 9.5 }}>{p.url}</a></span>}</span>
-                        <span style={{ color: "#777", flexShrink: 0, marginLeft: 8 }}>{p.dates}</span>
-                      </div>
-                      <div style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10 }}>{"• " + p.text}</div>
-                    </div>
-                  );
-                })}
+                {(res.projects || []).map(function(pid) { var p = getProj(pid); if (!p) return null; return <div key={pid} style={{ marginBottom: 3 }}><div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}><span><span style={{ fontWeight: 600 }}>{p.title}</span>{p.url && <span>{" | "}<a href={"https://" + p.url} style={{ color: "#1E3A5F", fontSize: 9.5 }}>{p.url}</a></span>}</span><span style={{ color: "#777", flexShrink: 0, marginLeft: 8 }}>{p.dates}</span></div><div style={{ fontSize: 10, color: "#333", marginTop: 1, paddingLeft: 10 }}>{"• " + p.text}</div></div>; })}
               </div>
             )}
 
+            {/* Cover Letter */}
             {tab === "cover" && cov && (
               <div ref={cRef} style={{ background: "#fff", borderRadius: 12, padding: "28px 36px", color: "#1a1a1a", fontFamily: "'DM Sans',sans-serif", lineHeight: 1.6, boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1E3A5F" }}>{MD.name}</div>
-                  <div style={{ fontSize: 11.5, color: "#777" }}>{MD.location + " | " + MD.email + " | " + MD.phone}</div>
-                  <div style={{ fontSize: 11.5, color: "#777" }}>{MD.linkedin + " | " + MD.github}</div>
-                </div>
+                <div style={{ marginBottom: 18 }}><div style={{ fontSize: 13.5, fontWeight: 700, color: "#1E3A5F" }}>{MD.name}</div><div style={{ fontSize: 11.5, color: "#777" }}>{MD.location + " | " + MD.email + " | " + MD.phone}</div><div style={{ fontSize: 11.5, color: "#777" }}>{MD.linkedin + " | " + MD.github}</div></div>
                 <div style={{ fontSize: 12, marginBottom: 14 }}>{cov.salutation}</div>
                 <div style={{ fontSize: 12, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{cov.body}</div>
                 <div style={{ fontSize: 12, marginTop: 14 }}>{cov.closing}</div>
               </div>
             )}
 
-            {!cov && tab === "resume" && (
-              <div style={{ marginTop: 16 }}>
-                <button onClick={async function() {
-                  setCovLoading(true); setErr("");
-                  try {
-                    var cRaw = await apiCall(COVER_SYS, "Job posting:\n" + posting + "\n\nResume overview: " + res.overview + "\nTarget: " + res.target_title, 1500);
-                    var cp;
-                    try { cp = JSON.parse(cRaw); } catch (e2) { throw new Error("Cover letter parse failed."); }
-                    setCov(cp);
-                  } catch (e) { setErr(e.message); }
-                  setCovLoading(false);
-                }} disabled={covLoading} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "1px solid " + C.success, background: "rgba(16,185,129,0.06)", color: C.success, fontSize: 14, fontWeight: 600, cursor: covLoading ? "wait" : "pointer", fontFamily: "inherit" }}>
-                  {covLoading ? "Writing cover letter..." : "Generate Cover Letter"}
-                </button>
+            {/* Q&A Tab */}
+            {tab === "qa" && qaGenerated && (
+              <div ref={qaRef} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 20 }}>
+                {questions.filter(function(q) { return q.q.trim(); }).map(function(q, i) { return <div key={i} style={{ marginBottom: 16 }}><div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{"Q" + (i + 1) + ": " + q.q}</div><div style={{ fontSize: 12.5, color: C.text, padding: "10px 14px", borderLeft: "3px solid " + C.accent, background: "rgba(59,130,246,0.04)", borderRadius: "0 8px 8px 0", lineHeight: 1.6 }}>{q.a}</div></div>; })}
               </div>
             )}
 
-            {err && <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: C.error, fontSize: 12 }}>{err}</div>}
+            {/* Generate Cover Letter button */}
+            {!cov && tab === "resume" && (
+              <div style={{ marginTop: 16 }}><button onClick={handleCoverAfter} disabled={covLoading} style={{ width: "100%", padding: "14px", borderRadius: 10, border: "1px solid " + C.success, background: "rgba(16,185,129,0.06)", color: C.success, fontSize: 14, fontWeight: 600, cursor: covLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{covLoading ? "Writing cover letter..." : "Generate Cover Letter"}</button></div>
+            )}
+
+            {/* Q&A Section */}
+            <div style={{ marginTop: 20, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Application Questions</div>
+              {questions.map(function(q, i) { return <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: C.textD, width: 20 }}>{i + 1}.</span>
+                <input value={q.q} onChange={function(e) { var v = e.target.value; setQuestions(function(prev) { var n = prev.slice(); n[i] = { q: v, a: n[i].a }; return n; }); }} placeholder="e.g. Why are you interested?" style={Object.assign({}, iS, { flex: 1 })} />
+              </div>; })}
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={function() { setQuestions(function(p) { return p.concat([{q:"",a:""}]); }); }} style={{ padding: "6px 14px", borderRadius: 6, border: "1px solid " + C.border, background: "transparent", color: C.textM, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>+ Add Question</button>
+                <button onClick={handleQA} disabled={qaLoading} style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.accent, color: "#fff", fontSize: 12, fontWeight: 600, cursor: qaLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{qaLoading ? "Generating..." : "Generate Answers"}</button>
+              </div>
+            </div>
+
+            {/* Refine Section */}
+            <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Refine</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <textarea value={refineText} onChange={function(e) { setRefineText(e.target.value); }} placeholder='e.g. "More Python emphasis", "Add PGWP mention"' style={Object.assign({}, iS, { flex: 1, minHeight: 50, resize: "vertical" })} />
+                <button onClick={handleRefine} disabled={refining || !refineText.trim()} style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: refining ? C.border : C.accent, color: "#fff", fontSize: 12, fontWeight: 600, cursor: refining ? "wait" : "pointer", fontFamily: "inherit", alignSelf: "flex-end" }}>{refining ? "Refining..." : "Refine"}</button>
+              </div>
+            </div>
+
+            {/* AI Career Advisor */}
+            <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ padding: "12px 20px", fontSize: 14, fontWeight: 600 }}>AI Career Advisor</div>
+              {chatMsgs.length > 0 && (
+                <div style={{ maxHeight: 300, overflowY: "auto", padding: "0 20px 8px" }}>
+                  {chatMsgs.map(function(m, i) { return <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : m.role === "system" ? "center" : "flex-start", marginBottom: 8 }}>
+                    <div style={{ maxWidth: m.role === "system" ? "100%" : "85%", padding: "8px 14px", borderRadius: 10, background: m.role === "user" ? "rgba(59,130,246,0.1)" : m.role === "system" ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.03)", border: "1px solid " + (m.role === "user" ? "rgba(59,130,246,0.2)" : m.role === "system" ? "rgba(16,185,129,0.15)" : C.border), fontSize: m.role === "system" ? 11 : 12.5, lineHeight: 1.6, color: m.role === "system" ? C.success : C.text, whiteSpace: "pre-wrap", textAlign: m.role === "system" ? "center" : "left" }}>{m.text}</div>
+                  </div>; })}
+                </div>
+              )}
+              <div style={{ padding: "8px 20px 16px", display: "flex", gap: 8 }}>
+                <input value={chatInput} onChange={function(e) { setChatInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") handleChat(); }} placeholder="Ask about fit, gaps, or interview prep..." style={Object.assign({}, iS, { flex: 1 })} />
+                <button onClick={handleChat} disabled={!chatInput.trim() || chatLoading} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: chatInput.trim() ? C.accent : C.border, color: chatInput.trim() ? "#fff" : C.textD, fontSize: 12, fontWeight: 600, cursor: chatInput.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>Ask</button>
+              </div>
+            </div>
+
+            {err && <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", color: C.error, fontSize: 12 }}>{err}</div>}
           </div>
         )}
       </div>
