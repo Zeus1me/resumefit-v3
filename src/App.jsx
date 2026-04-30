@@ -347,7 +347,58 @@ var C = {
   success: "#10b981", error: "#ef4444"
 };
 
-// ===== COMPONENT =====
+
+// ===== TECHY COLOR SCHEME =====
+var C = {
+  bg: "#050609", surface: "#0c0e16", surfaceG: "rgba(15,18,30,0.7)",
+  border: "#141830", borderG: "rgba(79,142,247,0.08)",
+  accent: "#00d4ff", accentD: "#0088cc", accentG: "rgba(0,212,255,0.06)",
+  neon: "#00ff9d", neonG: "rgba(0,255,157,0.06)",
+  purple: "#a855f7", purpleG: "rgba(168,85,247,0.06)",
+  amber: "#fbbf24", amberG: "rgba(251,191,36,0.06)",
+  text: "#e0e6f0", textM: "#7a85a0", textD: "#4a5268",
+  success: "#00ff9d", error: "#ff4a6e", errorG: "rgba(255,74,110,0.06)",
+  glow: "0 0 20px rgba(0,212,255,0.15)"
+};
+
+// ===== CERTIFICATION TRACKER DATA =====
+var CERTS = [
+  { name: "Google Analytics (GA4)", issuer: "Google Skillshop", cost: "$0", time: "3-5 hrs", url: "https://skillshop.withgoogle.com", week: 1, status: "in_progress" },
+  { name: "HubSpot Data Analytics", issuer: "HubSpot Academy", cost: "$0", time: "4-6 hrs", url: "https://academy.hubspot.com/courses", week: 1, status: "pending" },
+  { name: "Google Data Analytics", issuer: "Coursera", cost: "$0", time: "2-3 wks", url: "https://www.coursera.org/professional-certificates/google-data-analytics", week: 2, status: "pending" },
+  { name: "SQL Associate", issuer: "DataCamp", cost: "$25", time: "1-2 days", url: "https://www.datacamp.com/certification", week: 3, status: "pending" },
+  { name: "Data Analyst Associate", issuer: "DataCamp", cost: "incl.", time: "1 week", url: "https://www.datacamp.com/certification/data-analyst", week: 4, status: "pending" },
+  { name: "Data Scientist Associate", issuer: "DataCamp", cost: "incl.", time: "1-2 wks", url: "https://www.datacamp.com/certification/data-scientist", week: 5, status: "pending" },
+  { name: "AWS Cloud Practitioner", issuer: "AWS", cost: "$100", time: "2-4 wks", url: "https://aws.amazon.com/certification/certified-cloud-practitioner/", week: 7, status: "pending" },
+  { name: "Microsoft PL-300 Power BI", issuer: "Microsoft", cost: "$165", time: "3-5 wks", url: "https://learn.microsoft.com/en-us/credentials/certifications/data-analyst-associate/", week: 10, status: "future" },
+  { name: "Tableau Desktop Specialist", issuer: "Salesforce", cost: "$100", time: "2-3 wks", url: "https://www.tableau.com/learn/certification/desktop-specialist", week: 12, status: "future" }
+];
+
+// ===== QUOTES API =====
+var QUOTE_APIS = [
+  "https://api.quotable.io/random?tags=technology|success|motivational|wisdom",
+  "https://zenquotes.io/api/random"
+];
+
+var TECH_FACTS = [
+  "92% of Canadian tech recruiters check LinkedIn before calling a candidate.",
+  "The average recruiter spends 6-7 seconds on the first scan of a resume.",
+  "Data analytics roles in Vancouver grew 34% year-over-year in 2025.",
+  "Python is the #1 most-requested skill in Canadian data job postings.",
+  "Companies using ATS reject 75% of resumes before a human ever sees them.",
+  "PGWP holders have a 23% higher interview callback rate than work-permit seekers.",
+  "Candidates who tailor their resume to each posting are 3x more likely to get interviews.",
+  "The median Data Analyst salary in Vancouver is $85,000 CAD (2026).",
+  "SQL appears in 94% of data analyst job postings in Canada.",
+  "Cover letters increase interview chances by 50% for entry-level positions.",
+  "Remote-friendly data roles in Canada increased by 41% since 2024.",
+  "Candidates with 3+ certifications get 27% more recruiter attention.",
+  "GitHub portfolio links increase callback rates by 35% for technical roles.",
+  "The Canadian tech sector added 65,000+ jobs in 2025 alone.",
+  "Machine learning engineer is the fastest-growing role in BC (2024-2026).",
+  "Northeastern University grads have a 91% employment rate within 6 months."
+];
+
 export default function App() {
   var rRef = useRef(null);
   var cRef = useRef(null);
@@ -488,7 +539,7 @@ export default function App() {
         try { cp = JSON.parse(cRaw); } catch(e3) { throw new Error("Cover letter parse failed."); }
         setCov(cp);
       }
-      setStatus("done"); setProg(""); // results;
+      setStatus("done"); setProg(""); setView("results");
 
     } catch(e) { setErr(e.message); setStatus("idle"); setProg(""); }
   }
@@ -653,26 +704,192 @@ export default function App() {
   // ===== RENDER =====
   var iS = { width: "100%", background: C.bg, border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "inherit", color: C.text, outline: "none", boxSizing: "border-box" };
 
+
+  // ===== DASHBOARD STATE =====
+  var _view = s("home"), view = _view[0], setView = _view[1];
+  var _quote = s({ text: "The best way to predict the future is to build it.", author: "Peter Drucker" }), quote = _quote[0], setQuote = _quote[1];
+  var _fact = s(TECH_FACTS[Math.floor(Math.random() * TECH_FACTS.length)]), fact = _fact[0], setFact = _fact[1];
+  var _quoteLoading = s(false), quoteLoading = _quoteLoading[0], setQuoteLoading = _quoteLoading[1];
+  var _certStatuses = s(function() { try { var d = localStorage.getItem("rf_certs"); return d ? JSON.parse(d) : {}; } catch(e) { return {}; } }), certStatuses = _certStatuses[0], setCertStatuses = _certStatuses[1];
+  var _clock = s(new Date()), clock = _clock[0], setClock = _clock[1];
+
+  // Clock tick
+  useState(function() {
+    var iv = setInterval(function() { setClock(new Date()); }, 1000);
+    return function() { clearInterval(iv); };
+  });
+
+  // Fetch live quote on mount
+  useState(function() { fetchQuote(); });
+
+  function fetchQuote() {
+    setQuoteLoading(true);
+    fetch("https://zenquotes.io/api/random")
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d[0]) setQuote({ text: d[0].q, author: d[0].a });
+        setQuoteLoading(false);
+      })
+      .catch(function() {
+        // Fallback to local quotes
+        var fallback = [
+          { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+          { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+          { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+          { text: "Code is like humor. When you have to explain it, it's bad.", author: "Cory House" },
+          { text: "The best error message is the one that never shows up.", author: "Thomas Fuchs" },
+          { text: "First, solve the problem. Then, write the code.", author: "John Johnson" }
+        ];
+        setQuote(fallback[Math.floor(Math.random() * fallback.length)]);
+        setQuoteLoading(false);
+      });
+  }
+
+  function refreshFact() { setFact(TECH_FACTS[Math.floor(Math.random() * TECH_FACTS.length)]); }
+
+  function toggleCert(name) {
+    var next = Object.assign({}, certStatuses);
+    if (next[name] === "done") { next[name] = ""; }
+    else { next[name] = "done"; }
+    setCertStatuses(next);
+    try { localStorage.setItem("rf_certs", JSON.stringify(next)); } catch(e) {}
+  }
+
+  function goHome() { setView("home"); }
+
+  // Override reset to set view
+  var origReset = reset;
+  reset = function() { origReset(); setView("build"); };
+
+
+  // ===== STYLES =====
+  var iS = { width: "100%", background: "rgba(5,6,9,0.8)", border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "'JetBrains Mono','DM Sans',monospace", color: C.text, outline: "none", boxSizing: "border-box" };
+  var glassCard = { background: C.surfaceG, border: "1px solid " + C.borderG, borderRadius: 14, padding: "18px 20px" };
+  var neonBtn = function(color, disabled) { return { padding: "8px 18px", borderRadius: 8, border: "1px solid " + (disabled ? C.border : color), background: disabled ? "transparent" : "rgba(" + (color === C.accent ? "0,212,255" : color === C.neon ? "0,255,157" : color === C.purple ? "168,85,247" : "251,191,36") + ",0.08)", color: disabled ? C.textD : color, fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s" }; };
+
+  var daysToGrad = Math.max(0, Math.ceil((new Date("2026-06-28") - new Date()) / 86400000));
+  var completedCerts = Object.keys(certStatuses).filter(function(k) { return certStatuses[k] === "done"; }).length;
+
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif", position: "relative", overflow: "hidden" }}>
+      {/* Ambient glow orbs */}
+      <div style={{ position: "fixed", top: -200, left: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", bottom: -200, right: -100, width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.03) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* HEADER */}
-      <div style={{ borderBottom: "1px solid " + C.border, padding: "14px 20px", background: C.surface }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={reset}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" }}>Rf</div>
-            <div><div style={{ fontSize: 15, fontWeight: 700 }}>ResumeFit</div><div style={{ fontSize: 10, color: C.textD }}>AI CAREER PLATFORM</div></div>
+      <div style={{ borderBottom: "1px solid " + C.border, padding: "12px 20px", background: "rgba(12,14,22,0.9)", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={goHome}>
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: "linear-gradient(135deg, " + C.accent + ", " + C.purple + ")", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", boxShadow: "0 0 15px rgba(0,212,255,0.2)" }}>Rf</div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>ResumeFit</div>
+              <div style={{ fontSize: 9, color: C.accent, letterSpacing: "0.12em", fontFamily: "'JetBrains Mono',monospace" }}>{"// AI CAREER PLATFORM"}</div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={reset} style={{ padding: "7px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: C.accent, color: "#fff" }}>+ New</button>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.textD, marginRight: 8 }}>{clock.toLocaleTimeString("en-CA", { hour12: false })}</div>
+            <button onClick={goHome} style={neonBtn(view === "home" ? C.accent : C.textD, false)}>{"{ dashboard }"}</button>
+            <button onClick={reset} style={{ padding: "8px 18px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "linear-gradient(135deg, " + C.accent + ", " + C.purple + ")", color: "#fff", boxShadow: C.glow }}>{"+ new_resume()"}</button>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 20px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "28px 20px", position: "relative", zIndex: 1 }}>
 
-        {/* ===== BUILDER ===== */}
-        {status !== "done" && (
+        {/* ===== DASHBOARD ===== */}
+        {view === "home" && (
+          <div>
+            {/* Terminal greeting */}
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", marginBottom: 24 }}>
+              <div style={{ fontSize: 11, color: C.accent }}>{"$ resumefit --status"}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{"Welcome back, "}
+                <span style={{ color: C.accent }}>Zeus</span>
+              </div>
+              <div style={{ fontSize: 12, color: C.textD, marginTop: 2 }}>{daysToGrad + " days until graduation // " + new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</div>
+            </div>
+
+            {/* Stats grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+              {[
+                { label: "days_to_grad", val: daysToGrad, color: C.accent },
+                { label: "certs_completed", val: completedCerts + "/" + CERTS.length, color: C.neon },
+                { label: "certs_remaining", val: CERTS.length - completedCerts, color: C.amber },
+                { label: "total_projects", val: MD.projects.length, color: C.purple }
+              ].map(function(st, i) {
+                return <div key={i} style={Object.assign({}, glassCard, { position: "relative", overflow: "hidden" })}>
+                  <div style={{ position: "absolute", top: -15, right: -15, width: 60, height: 60, borderRadius: "50%", background: "radial-gradient(circle, " + st.color + "11, transparent)", pointerEvents: "none" }} />
+                  <div style={{ fontSize: 10, color: C.textD, fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>{st.label}</div>
+                  <div style={{ fontSize: 30, fontWeight: 700, color: st.color, fontFamily: "'JetBrains Mono',monospace" }}>{st.val}</div>
+                </div>;
+              })}
+            </div>
+
+            {/* Quote + Fact row */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+              <div style={Object.assign({}, glassCard, { borderLeft: "3px solid " + C.accent })}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, color: C.accent, fontFamily: "'JetBrains Mono',monospace" }}>{"// daily_quote"}</div>
+                  <button onClick={fetchQuote} disabled={quoteLoading} style={{ background: "none", border: "none", color: C.accent, fontSize: 11, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace" }}>{quoteLoading ? "loading..." : "refresh()"}</button>
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, fontStyle: "italic", color: C.text }}>{'"' + quote.text + '"'}</div>
+                <div style={{ fontSize: 11, color: C.textM, marginTop: 6 }}>{"— " + quote.author}</div>
+              </div>
+              <div style={Object.assign({}, glassCard, { borderLeft: "3px solid " + C.neon })}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, color: C.neon, fontFamily: "'JetBrains Mono',monospace" }}>{"// tech_fact"}</div>
+                  <button onClick={refreshFact} style={{ background: "none", border: "none", color: C.neon, fontSize: 11, cursor: "pointer", fontFamily: "'JetBrains Mono',monospace" }}>{"shuffle()"}</button>
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, color: C.text }}>{fact}</div>
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+              <button onClick={reset} style={Object.assign({}, glassCard, { cursor: "pointer", textAlign: "left", border: "1px solid rgba(0,212,255,0.15)", transition: "all 0.2s" })}>
+                <div style={{ fontSize: 10, color: C.accent, fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>{"$ resumefit --generate"}</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>Tailor new resume</div>
+                <div style={{ fontSize: 12, color: C.textD, marginTop: 4 }}>Paste a posting, get an ATS-optimized resume + cover letter</div>
+              </button>
+              <div style={Object.assign({}, glassCard, { textAlign: "left", border: "1px solid rgba(0,255,157,0.1)" })}>
+                <div style={{ fontSize: 10, color: C.neon, fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>{"$ resumefit --progress"}</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>Graduation countdown</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: C.neon, fontFamily: "'JetBrains Mono',monospace", marginTop: 4 }}>{daysToGrad}<span style={{ fontSize: 14, color: C.textD }}>{" days"}</span></div>
+              </div>
+            </div>
+
+            {/* Certification Tracker */}
+            <div style={Object.assign({}, glassCard, { marginBottom: 24 })}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: C.purple, fontFamily: "'JetBrains Mono',monospace", marginBottom: 2 }}>{"// certification_tracker"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>Certification Sprint</div>
+                </div>
+                <div style={{ fontSize: 12, color: C.neon, fontFamily: "'JetBrains Mono',monospace" }}>{completedCerts + "/" + CERTS.length + " complete"}</div>
+              </div>
+              {/* Progress bar */}
+              <div style={{ width: "100%", height: 6, background: C.border, borderRadius: 3, marginBottom: 16, overflow: "hidden" }}>
+                <div style={{ width: (completedCerts / CERTS.length * 100) + "%", height: "100%", background: "linear-gradient(90deg, " + C.accent + ", " + C.neon + ")", borderRadius: 3, transition: "width 0.5s", boxShadow: "0 0 10px " + C.accent }} />
+              </div>
+              {CERTS.map(function(cert, i) {
+                var isDone = certStatuses[cert.name] === "done";
+                var statusColor = isDone ? C.neon : cert.status === "in_progress" ? C.accent : cert.status === "future" ? C.textD : C.amber;
+                return <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < CERTS.length - 1 ? "1px solid " + C.border : "none" }}>
+                  <button onClick={function() { toggleCert(cert.name); }} style={{ width: 22, height: 22, borderRadius: 6, border: "1.5px solid " + statusColor, background: isDone ? statusColor + "18" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12, color: statusColor, flexShrink: 0 }}>{isDone ? "\u2713" : ""}</button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <a href={cert.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, fontWeight: 600, color: isDone ? C.textD : C.text, textDecoration: isDone ? "line-through" : "none", cursor: "pointer" }}>{cert.name}</a>
+                      <span style={{ fontSize: 9, padding: "1px 7px", borderRadius: 4, background: statusColor + "15", color: statusColor, fontFamily: "'JetBrains Mono',monospace" }}>{isDone ? "DONE" : cert.status === "in_progress" ? "IN PROGRESS" : cert.status === "future" ? "POST-GRAD" : "WEEK " + cert.week}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.textD, marginTop: 2 }}>{cert.issuer + " • " + cert.cost + " • " + cert.time}</div>
+                  </div>
+                  <a href={cert.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.accent, fontFamily: "'JetBrains Mono',monospace", textDecoration: "none", flexShrink: 0 }}>{"enroll >"}</a>
+                </div>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {view === "build" && status !== "done" && (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" }}>
             <div style={{ display: "flex", borderBottom: "1px solid " + C.border }}>
               <button onClick={function() { setMode("text"); }} style={{ flex: 1, padding: "12px 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === "text" ? "rgba(59,130,246,0.08)" : "transparent", color: mode === "text" ? C.accent : C.textD, borderBottom: mode === "text" ? "2px solid " + C.accent : "2px solid transparent" }}>Paste Text</button>
@@ -710,7 +927,7 @@ export default function App() {
         )}
 
         {/* BATCH JOB SCORING */}
-        {status !== "done" && (
+        {view === "build" && status !== "done" && (
           <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Batch Job Scoring</div>
             <div style={{ fontSize: 12, color: C.textD, marginBottom: 8 }}>Paste up to 5 job URLs (one per line) to score them all against your profile</div>
@@ -733,7 +950,7 @@ export default function App() {
 
 
         {/* ===== RESULTS ===== */}
-        {status === "done" && res && (
+        {view === "results" && status === "done" && res && (
           <div>
             {/* Toolbar */}
             <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
