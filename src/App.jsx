@@ -333,7 +333,7 @@ ONLY valid JSON, no markdown:
 var C = {
   bg: "#08090E", surface: "#10121A", surfaceR: "#161924",
   border: "#1E2436", borderH: "#2D3650",
-  accent: "#4F8EF7", accentD: "#2B6CE6", accentS: "rgba(79,142,247,0.07)",
+  accent: "#00ff9d", accentD: "#00cc7a", accentS: "rgba(0,255,157,0.07)",
   text: "#E4E8F1", textM: "#8D97AE", textD: "#586278",
   success: "#2DD4A0", error: "#F06565", errorS: "rgba(240,101,101,0.06)",
   emerald: "#2DD4A0", emeraldS: "rgba(45,212,160,0.07)",
@@ -342,7 +342,7 @@ var C = {
 // ===== COLORS =====
 var C = {
   bg: "#0a0e14", surface: "#111827", border: "#1e293b",
-  accent: "#3b82f6", accentD: "#1d4ed8",
+  accent: "#00ff9d", accentD: "#00cc7a",
   text: "#e5e7eb", textM: "#9ca3af", textD: "#6b7280",
   success: "#10b981", error: "#ef4444"
 };
@@ -352,13 +352,13 @@ var C = {
 var C = {
   bg: "#050609", surface: "#0c0e16", surfaceG: "rgba(15,18,30,0.7)",
   border: "#141830", borderG: "rgba(79,142,247,0.08)",
-  accent: "#00d4ff", accentD: "#0088cc", accentG: "rgba(0,212,255,0.06)",
+  accent: "#00ff9d", accentD: "#00cc7a", accentG: "rgba(0,255,157,0.06)",
   neon: "#00ff9d", neonG: "rgba(0,255,157,0.06)",
   purple: "#a855f7", purpleG: "rgba(168,85,247,0.06)",
   amber: "#fbbf24", amberG: "rgba(251,191,36,0.06)",
   text: "#e0e6f0", textM: "#7a85a0", textD: "#4a5268",
   success: "#00ff9d", error: "#ff4a6e", errorG: "rgba(255,74,110,0.06)",
-  glow: "0 0 20px rgba(0,212,255,0.15)"
+  glow: "0 0 20px rgba(0,255,157,0.15)"
 };
 
 // ===== CERTIFICATION TRACKER DATA =====
@@ -752,7 +752,7 @@ export default function App() {
   // ===== STYLES =====
   var iS = { width: "100%", background: "rgba(5,6,9,0.8)", border: "1px solid " + C.border, borderRadius: 8, padding: "10px 12px", fontSize: 13, fontFamily: "'JetBrains Mono','DM Sans',monospace", color: C.text, outline: "none", boxSizing: "border-box" };
   var glassCard = { background: C.surfaceG, border: "1px solid " + C.borderG, borderRadius: 14, padding: "18px 20px" };
-  var neonBtn = function(color, disabled) { return { padding: "8px 18px", borderRadius: 8, border: "1px solid " + (disabled ? C.border : color), background: disabled ? "transparent" : "rgba(" + (color === C.accent ? "0,212,255" : color === C.neon ? "0,255,157" : color === C.purple ? "168,85,247" : "251,191,36") + ",0.08)", color: disabled ? C.textD : color, fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s" }; };
+  var neonBtn = function(color, disabled) { return { padding: "8px 18px", borderRadius: 8, border: "1px solid " + (disabled ? C.border : color), background: disabled ? "transparent" : "rgba(" + (color === C.accent ? "0,255,157" : color === C.neon ? "0,255,157" : color === C.purple ? "168,85,247" : "251,191,36") + ",0.08)", color: disabled ? C.textD : color, fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.2s" }; };
 
   var daysToGrad = Math.max(0, Math.ceil((new Date("2026-06-28") - new Date()) / 86400000));
   var completedCerts = Object.keys(certStatuses).filter(function(k) { return certStatuses[k] === "done"; }).length;
@@ -760,14 +760,14 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif", position: "relative", overflow: "hidden" }}>
       {/* Ambient glow orbs */}
-      <div style={{ position: "fixed", top: -200, left: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "fixed", top: -200, left: -100, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,255,157,0.04) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "fixed", bottom: -200, right: -100, width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.03) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
 
       {/* HEADER */}
       <div style={{ borderBottom: "1px solid " + C.border, padding: "12px 20px", background: "rgba(12,14,22,0.9)", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={goHome}>
-            <div style={{ width: 34, height: 34, borderRadius: 8, background: "linear-gradient(135deg, " + C.accent + ", " + C.purple + ")", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", boxShadow: "0 0 15px rgba(0,212,255,0.2)" }}>Rf</div>
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: "linear-gradient(135deg, " + C.accent + ", #00cc7a")", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", boxShadow: "0 0 15px rgba(0,255,157,0.2)" }}>Rf</div>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.02em" }}>ResumeFit</div>
               <div style={{ fontSize: 9, color: C.accent, letterSpacing: "0.12em", fontFamily: "'JetBrains Mono',monospace" }}>{"// AI CAREER PLATFORM"}</div>
@@ -776,7 +776,7 @@ export default function App() {
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <div style={{ fontSize: 11, fontFamily: "'JetBrains Mono',monospace", color: C.textD, marginRight: 8 }}>{clock.toLocaleTimeString("en-CA", { hour12: false })}</div>
             <button onClick={goHome} style={neonBtn(view === "home" ? C.accent : C.textD, false)}>{"{ dashboard }"}</button>
-            <button onClick={reset} style={{ padding: "8px 18px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "linear-gradient(135deg, " + C.accent + ", " + C.purple + ")", color: "#fff", boxShadow: C.glow }}>{"+ new_resume()"}</button>
+            <button onClick={reset} style={{ padding: "8px 18px", borderRadius: 8, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: "linear-gradient(135deg, " + C.accent + ", #00cc7a")", color: "#fff", boxShadow: C.glow }}>{"+ new_resume()"}</button>
           </div>
         </div>
       </div>
@@ -832,7 +832,7 @@ export default function App() {
 
             {/* Quick actions */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-              <button onClick={reset} style={Object.assign({}, glassCard, { cursor: "pointer", textAlign: "left", border: "1px solid rgba(0,212,255,0.15)", transition: "all 0.2s" })}>
+              <button onClick={reset} style={Object.assign({}, glassCard, { cursor: "pointer", textAlign: "left", border: "1px solid rgba(0,255,157,0.15)", transition: "all 0.2s" })}>
                 <div style={{ fontSize: 10, color: C.accent, fontFamily: "'JetBrains Mono',monospace", marginBottom: 6 }}>{"$ resumefit --generate"}</div>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>Tailor new resume</div>
                 <div style={{ fontSize: 12, color: C.textD, marginTop: 4 }}>Paste a posting, get an ATS-optimized resume + cover letter</div>
@@ -879,8 +879,8 @@ export default function App() {
         {view === "build" && status !== "done" && (
           <div style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, overflow: "hidden" }}>
             <div style={{ display: "flex", borderBottom: "1px solid " + C.border }}>
-              <button onClick={function() { setMode("text"); }} style={{ flex: 1, padding: "12px 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === "text" ? "rgba(59,130,246,0.08)" : "transparent", color: mode === "text" ? C.accent : C.textD, borderBottom: mode === "text" ? "2px solid " + C.accent : "2px solid transparent" }}>Paste Text</button>
-              <button onClick={function() { setMode("url"); }} style={{ flex: 1, padding: "12px 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === "url" ? "rgba(59,130,246,0.08)" : "transparent", color: mode === "url" ? C.accent : C.textD, borderBottom: mode === "url" ? "2px solid " + C.accent : "2px solid transparent" }}>From URL</button>
+              <button onClick={function() { setMode("text"); }} style={{ flex: 1, padding: "12px 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === "text" ? "rgba(0,255,157,0.08)" : "transparent", color: mode === "text" ? C.accent : C.textD, borderBottom: mode === "text" ? "2px solid " + C.accent : "2px solid transparent" }}>Paste Text</button>
+              <button onClick={function() { setMode("url"); }} style={{ flex: 1, padding: "12px 0", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", background: mode === "url" ? "rgba(0,255,157,0.08)" : "transparent", color: mode === "url" ? C.accent : C.textD, borderBottom: mode === "url" ? "2px solid " + C.accent : "2px solid transparent" }}>From URL</button>
             </div>
             <div style={{ padding: 20 }}>
               {mode === "text" ? (
@@ -895,16 +895,16 @@ export default function App() {
               <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                   <span style={{ color: C.textM }}>Pages:</span>
-                  {[1, 2].map(function(n) { return <button key={n} onClick={function() { setPages(n); }} style={{ padding: "4px 12px", borderRadius: 6, border: pages === n ? "1.5px solid " + C.accent : "1px solid " + C.border, background: pages === n ? "rgba(59,130,246,0.08)" : "transparent", color: pages === n ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>{n}</button>; })}
+                  {[1, 2].map(function(n) { return <button key={n} onClick={function() { setPages(n); }} style={{ padding: "4px 12px", borderRadius: 6, border: pages === n ? "1.5px solid " + C.accent : "1px solid " + C.border, background: pages === n ? "rgba(0,255,157,0.08)" : "transparent", color: pages === n ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>{n}</button>; })}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
                   <span style={{ color: C.textM }}>Generate:</span>
-                  <button onClick={function() { setGenType("resume"); }} style={{ padding: "4px 14px", borderRadius: 6, border: genType === "resume" ? "1.5px solid " + C.accent : "1px solid " + C.border, background: genType === "resume" ? "rgba(59,130,246,0.08)" : "transparent", color: genType === "resume" ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Resume Only</button>
+                  <button onClick={function() { setGenType("resume"); }} style={{ padding: "4px 14px", borderRadius: 6, border: genType === "resume" ? "1.5px solid " + C.accent : "1px solid " + C.border, background: genType === "resume" ? "rgba(0,255,157,0.08)" : "transparent", color: genType === "resume" ? C.accent : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Resume Only</button>
                   <button onClick={function() { setGenType("both"); }} style={{ padding: "4px 14px", borderRadius: 6, border: genType === "both" ? "1.5px solid " + C.success : "1px solid " + C.border, background: genType === "both" ? "rgba(16,185,129,0.08)" : "transparent", color: genType === "both" ? C.success : C.textD, cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>Resume + Cover Letter</button>
                 </div>
               </div>
               <div style={{ marginTop: 20, textAlign: "right" }}>
-                <button onClick={handleGo} disabled={status === "loading"} style={{ padding: "12px 32px", borderRadius: 10, border: "none", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", fontFamily: "inherit", background: "linear-gradient(135deg," + C.accent + "," + C.accentD + ")", color: "#fff" }}>
+                <button onClick={handleGo} disabled={status === "loading"} style={{ padding: "12px 32px", borderRadius: 10, border: "none", fontSize: 14, fontWeight: 700, cursor: status === "loading" ? "wait" : "pointer", fontFamily: "inherit", background: "linear-gradient(135deg," + C.accent + ",#00cc7a")", color: "#fff" }}>
                   {status === "loading" ? prog : genType === "both" ? "Generate Both" : "Generate Resume"}
                 </button>
               </div>
@@ -1014,7 +1014,7 @@ export default function App() {
             {/* Q&A Tab */}
             {tab === "qa" && qaGenerated && (
               <div ref={qaRef} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: 20 }}>
-                {questions.filter(function(q) { return q.q.trim(); }).map(function(q, i) { return <div key={i} style={{ marginBottom: 16 }}><div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{"Q" + (i + 1) + ": " + q.q}</div><div style={{ fontSize: 12.5, color: C.text, padding: "10px 14px", borderLeft: "3px solid " + C.accent, background: "rgba(59,130,246,0.04)", borderRadius: "0 8px 8px 0", lineHeight: 1.6 }}>{q.a}</div></div>; })}
+                {questions.filter(function(q) { return q.q.trim(); }).map(function(q, i) { return <div key={i} style={{ marginBottom: 16 }}><div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{"Q" + (i + 1) + ": " + q.q}</div><div style={{ fontSize: 12.5, color: C.text, padding: "10px 14px", borderLeft: "3px solid " + C.accent, background: "rgba(0,255,157,0.04)", borderRadius: "0 8px 8px 0", lineHeight: 1.6 }}>{q.a}</div></div>; })}
               </div>
             )}
 
@@ -1051,7 +1051,7 @@ export default function App() {
               {chatMsgs.length > 0 && (
                 <div style={{ maxHeight: 300, overflowY: "auto", padding: "0 20px 8px" }}>
                   {chatMsgs.map(function(m, i) { return <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : m.role === "system" ? "center" : "flex-start", marginBottom: 8 }}>
-                    <div style={{ maxWidth: m.role === "system" ? "100%" : "85%", padding: "8px 14px", borderRadius: 10, background: m.role === "user" ? "rgba(59,130,246,0.1)" : m.role === "system" ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.03)", border: "1px solid " + (m.role === "user" ? "rgba(59,130,246,0.2)" : m.role === "system" ? "rgba(16,185,129,0.15)" : C.border), fontSize: m.role === "system" ? 11 : 12.5, lineHeight: 1.6, color: m.role === "system" ? C.success : C.text, whiteSpace: "pre-wrap", textAlign: m.role === "system" ? "center" : "left" }}>{m.text}</div>
+                    <div style={{ maxWidth: m.role === "system" ? "100%" : "85%", padding: "8px 14px", borderRadius: 10, background: m.role === "user" ? "rgba(0,255,157,0.1)" : m.role === "system" ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.03)", border: "1px solid " + (m.role === "user" ? "rgba(0,255,157,0.2)" : m.role === "system" ? "rgba(16,185,129,0.15)" : C.border), fontSize: m.role === "system" ? 11 : 12.5, lineHeight: 1.6, color: m.role === "system" ? C.success : C.text, whiteSpace: "pre-wrap", textAlign: m.role === "system" ? "center" : "left" }}>{m.text}</div>
                   </div>; })}
                 </div>
               )}
@@ -1087,7 +1087,7 @@ export default function App() {
                       </div>
                       <div style={{ marginBottom: 6 }}><span style={{ color: C.success, fontWeight: 600 }}>{"Strengths: "}</span>{answerFeedback.strengths}</div>
                       <div style={{ marginBottom: 6 }}><span style={{ color: "#f59e0b", fontWeight: 600 }}>{"Improve: "}</span>{answerFeedback.improvements}</div>
-                      <div style={{ padding: "8px 12px", background: "rgba(59,130,246,0.04)", borderLeft: "3px solid " + C.accent, borderRadius: "0 8px 8px 0", marginTop: 8 }}><span style={{ fontWeight: 600 }}>{"Model answer: "}</span>{answerFeedback.model_answer}</div>
+                      <div style={{ padding: "8px 12px", background: "rgba(0,255,157,0.04)", borderLeft: "3px solid " + C.accent, borderRadius: "0 8px 8px 0", marginTop: 8 }}><span style={{ fontWeight: 600 }}>{"Model answer: "}</span>{answerFeedback.model_answer}</div>
                     </div>
                   )}
                 </div>
@@ -1098,7 +1098,7 @@ export default function App() {
             <div style={{ marginTop: 16, background: C.surface, border: "1px solid " + C.border, borderRadius: 12, padding: "16px 20px" }}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Follow-up Emails</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                {[["followup", "1-Week Follow-up"], ["thankyou", "Thank You"], ["second", "2-Week Follow-up"]].map(function(t) { return <button key={t[0]} onClick={function() { setEmailType(t[0]); setEmailResult(""); }} style={{ padding: "5px 12px", borderRadius: 6, border: emailType === t[0] ? "1.5px solid " + C.accent : "1px solid " + C.border, background: emailType === t[0] ? "rgba(59,130,246,0.08)" : "transparent", color: emailType === t[0] ? C.accent : C.textD, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{t[1]}</button>; })}
+                {[["followup", "1-Week Follow-up"], ["thankyou", "Thank You"], ["second", "2-Week Follow-up"]].map(function(t) { return <button key={t[0]} onClick={function() { setEmailType(t[0]); setEmailResult(""); }} style={{ padding: "5px 12px", borderRadius: 6, border: emailType === t[0] ? "1.5px solid " + C.accent : "1px solid " + C.border, background: emailType === t[0] ? "rgba(0,255,157,0.08)" : "transparent", color: emailType === t[0] ? C.accent : C.textD, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{t[1]}</button>; })}
               </div>
               <button onClick={handleGenEmail} disabled={emailLoading} style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: C.accent, color: "#fff", fontSize: 12, fontWeight: 600, cursor: emailLoading ? "wait" : "pointer", fontFamily: "inherit" }}>{emailLoading ? "Writing..." : "Generate Email"}</button>
               {emailResult && (
