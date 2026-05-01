@@ -443,11 +443,6 @@ export default function App() {
   var _salaryData = s(null), salaryData = _salaryData[0], setSalaryData = _salaryData[1];
   var _salaryLoading = s(false), salaryLoading = _salaryLoading[0], setSalaryLoading = _salaryLoading[1];
 
-  function reset() {
-    setStatus("idle"); setRes(null); setCov(null); setPosting(""); setUrl("");
-    setErr(""); setProg(""); setInstr(""); setTab("resume"); setCopied(false);
-    setCovLoading(false); setGenType("resume"); setRefineText(""); setRefining(false);
-  }
 
   function getExp(id) {
     for (var i = 0; i < MD.experience.length; i++) {
@@ -509,7 +504,7 @@ export default function App() {
     setErr(""); setProg(""); setInstr(""); setTab("resume"); setCopied(false);
     setCovLoading(false); setGenType("resume"); setRefineText(""); setRefining(false);
     setQuestions([{q:"",a:""}]); setQaGenerated(false); setQaLoading(false);
-    setChatMsgs([]); setChatInput(""); // build;
+    setChatMsgs([]); setChatInput(""); setView("build");
   }
 
   // ===== HANDLERS =====
@@ -712,16 +707,9 @@ export default function App() {
   var _quoteLoading = s(false), quoteLoading = _quoteLoading[0], setQuoteLoading = _quoteLoading[1];
   var _certStatuses = s(function() { try { var d = localStorage.getItem("rf_certs"); return d ? JSON.parse(d) : {}; } catch(e) { return {}; } }), certStatuses = _certStatuses[0], setCertStatuses = _certStatuses[1];
   var _clock = s(new Date()), clock = _clock[0], setClock = _clock[1];
+  var _mounted = s(function() { setTimeout(function() { fetchQuoteLazy(); }, 500); setInterval(function() { setClock(new Date()); }, 1000); return true; }), mounted = _mounted[0];
 
-  // Clock tick
-  useState(function() {
-    var iv = setInterval(function() { setClock(new Date()); }, 1000);
-    return function() { clearInterval(iv); };
-  });
-
-  // Fetch live quote on mount
-  useState(function() { fetchQuote(); });
-
+  function fetchQuoteLazy() { fetchQuote(); }
   function fetchQuote() {
     setQuoteLoading(true);
     fetch("https://zenquotes.io/api/random")
@@ -758,8 +746,7 @@ export default function App() {
   function goHome() { setView("home"); }
 
   // Override reset to set view
-  var origReset = reset;
-  reset = function() { origReset(); setView("build"); };
+  // reset already includes setView("build")
 
 
   // ===== STYLES =====
